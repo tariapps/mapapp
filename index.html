@@ -202,10 +202,10 @@ body, html {
 </div>
 
 <div id="sidebar">
-	<div class="menu-item" onclick="switchPage('map-page')"><i class="fa-solid fa-map"></i> Map</div>
-	<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa-solid fa-tags"></i> Categories</div>
-	<div class="menu-item" onclick="switchPage('list-page')"><i class="fa-solid fa-list"></i> List</div>
-	<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa-solid fa-cog"></i> Settings</div>
+	<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa-solid fa-tags"></i> Kategoriat</div>
+	<div class="menu-item" onclick="switchPage('list-page')"><i class="fa-solid fa-list"></i> Lista</div>
+	<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa-solid fa-cog"></i> Asetukset</div>
+	<div class="menu-item" onclick="switchPage('map-page')"><i class="fa-solid fa-map"></i> Kartta</div>
 </div>
 
 <div id="map-page" class="page active">
@@ -221,9 +221,9 @@ body, html {
 
 <div id="categories-page" class="page">
 	<div class="list-container">
-		<h3 style="margin-bottom: 15px;">Manage Categories</h3>
+		<h3 style="margin-bottom: 15px;">Kategoriat</h3>
 		<div id="cat-manage-list"></div>
-		<button class="btn submit" style="margin-top: 15px; width: 100%;" onclick="openAddCategoryModal()">+ Add Category</button>
+		<button class="btn submit" style="margin-top: 15px; width: 100%;" onclick="openAddCategoryModal()">+ Lisää kategoria</button>
 	</div>
 </div>
 
@@ -234,10 +234,10 @@ body, html {
 
 <div id="settings-page" class="page">
 	<div class="list-container">
-		<h3>Map Settings</h3>
+		<h3>Kartta</h3>
 		
 		<div style="margin-top: 15px; background: #333; padding: 15px; border-radius: 8px;">
-			<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Tile Style</label>
+			<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Kartan tyyli</label>
 			<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
 				<option value="osm">Standard (High Contrast / Colorful)</option>
 				<option value="terrain">Terrain (Topography/Outdoor)</option>
@@ -246,7 +246,7 @@ body, html {
 			</select>
 
 			<div id="preview-map" style="height: 180px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000;"></div>
-			<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Preview of selected style</p>
+			<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Tyylin esikatselu</p>
 		</div>
 	</div>
 </div>
@@ -266,15 +266,15 @@ body, html {
 
 <div id="cat-modal" class="modal-overlay">
 	<div class="modal">
-		<h3 id="cat-modal-title">Category</h3>
+		<h3 id="cat-modal-title">Kategoria</h3>
 		<input type="hidden" id="edit-cat-id">
-		<label style="font-size: 12px; color: var(--text-muted);">Name</label>
-		<input type="text" id="cat-name-input" placeholder="Category Name">
-		<label style="font-size: 12px; color: var(--text-muted);">Marker Color</label>
+		<label style="font-size: 12px; color: var(--text-muted);">Nimi</label>
+		<input type="text" id="cat-name-input" placeholder="Kategorian nimi">
+		<label style="font-size: 12px; color: var(--text-muted);">Markkerin väri</label>
 		<input type="color" id="cat-color-input" value="#bb86fc" style="height: 40px; padding: 0;">
 		<div class="modal-actions">
-			<button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
-			<button class="btn submit" onclick="saveCategory()">Save</button>
+			<button class="btn" onclick="closeModal('cat-modal')">Peruuta</button>
+			<button class="btn submit" onclick="saveCategory()">Tallenna</button>
 		</div>
 	</div>
 </div>
@@ -463,7 +463,7 @@ async function openEditCategoryModal(id) {
 	const cat = categories.find(c => c.id === id);
 	if (!cat) return;
 
-	document.getElementById('cat-modal-title').innerText = "Edit Category";
+	document.getElementById('cat-modal-title').innerText = "Muokkaa kategoriaa";
 	document.getElementById('edit-cat-id').value = cat.id;
 	document.getElementById('cat-name-input').value = cat.name;
 	document.getElementById('cat-color-input').value = cat.color;
@@ -471,7 +471,7 @@ async function openEditCategoryModal(id) {
 }
 
 function openAddCategoryModal() {
-	document.getElementById('cat-modal-title').innerText = "Add Category";
+	document.getElementById('cat-modal-title').innerText = "Lisää kategoria";
 	document.getElementById('edit-cat-id').value = ''; // Empty means "New"
 	document.getElementById('cat-name-input').value = '';
 	document.getElementById('cat-color-input').value = '#bb86fc';
@@ -570,7 +570,7 @@ async function loadListPage() {
 			<div class="list-item" onclick="focusDotFromList(${dot.id}, '${dot.categoryId}')">
 				<div class="list-item-content">
 					<h4 style="color: ${cat.color};">${cat.name}</h4>
-					<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || 'No comment'}</p>
+					<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || ' '}</p>
 					<span class="list-item-date">${dateStr}</span>
 				</div>
 				<i class="fa-solid fa-chevron-right" style="color: var(--text-muted)"></i>
@@ -619,29 +619,38 @@ const MAP_STYLES = {
 		attr: '&copy; OpenStreetMap &copy; CARTO'
 	}
 };
-
 function initMap() {
-	// 1. Determine the starting style (Default to 'osm')
-	const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-	
-	// Set the dropdown to match the saved style
-	document.getElementById('map-style-select').value = savedStyle;
+    // 1. Load saved View State or use defaults
+    const savedLat = localStorage.getItem('lastMapLat') || 60.2;
+    const savedLng = localStorage.getItem('lastMapLng') || 24.9;
+    const savedZoom = localStorage.getItem('lastMapZoom') || 13;
+    const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+    
+    document.getElementById('map-style-select').value = savedStyle;
 
-	// 2. Initialize the map
-	map = L.map('map', { zoomControl: false }).setView([60.2, 24.9], 13);
-	
-	// 3. Apply the preferred tile layer
-	const config = MAP_STYLES[savedStyle];
-	L.tileLayer(config.url, {
-		maxZoom: 19,
-		attribution: config.attr
-	}).addTo(map);
+    // 2. Initialize the map with the saved view
+    map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
+    
+    // 3. Apply the tile layer
+    const config = MAP_STYLES[savedStyle];
+    L.tileLayer(config.url, {
+        maxZoom: 19,
+        attribution: config.attr
+    }).addTo(map);
 
-	// Click empty map to deselect
-	map.on('click', () => { deselectCurrentMarker(); });
+    // 4. NEW: Listen for map movements and save the state
+    map.on('moveend', () => {
+        const center = map.getCenter();
+        localStorage.setItem('lastMapLat', center.lat);
+        localStorage.setItem('lastMapLng', center.lng);
+        localStorage.setItem('lastMapZoom', map.getZoom());
+    });
 
-	// Initial GPS focus
-	recenterMap();
+    // Click empty map to deselect
+    map.on('click', () => { deselectCurrentMarker(); });
+
+    // Note: We REMOVE the automatic recenterMap() call here 
+    // so it doesn't override your saved view on startup.
 }
 
 function initPreviewMap() {
@@ -691,16 +700,19 @@ function changeMapStyle(style) {
 }
 
 function recenterMap() {
-	if ("geolocation" in navigator) {
-		navigator.geolocation.getCurrentPosition(pos => {
-			userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-			map.setView([userLocation.lat, userLocation.lng], 16);
-		}, err => {
-			alert("Unable to retrieve your location. Check permissions.");
-		}, { enableHighAccuracy: true });
-	} else {
-		alert("Geolocation is not supported by your browser");
-	}
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            map.setView([lat, lng], 16);
+            
+            // Explicitly save this as the new last-viewed position
+            localStorage.setItem('lastMapLat', lat);
+            localStorage.setItem('lastMapLng', lng);
+        }, err => {
+            alert("Location access denied or unavailable.");
+        }, { enableHighAccuracy: true });
+    }
 }
 
 // --- Marker Management ---
@@ -792,7 +804,7 @@ function openDotPopup(id) {
 		<div id="popup-${dot.id}">
 			<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
 			<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
-			<p style="margin: 10px 0;">${dot.comment || '<i>No comment</i>'}</p>
+			<p style="margin: 10px 0;">${dot.comment || '<i> </i>'}</p>
 			<p style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);">${coordsStr}</p>
 			<div style="margin-top:15px; display:flex; justify-content:space-between;">
 				<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
@@ -857,7 +869,7 @@ async function openEditDotModal(id) {
 	const dot = marker.dotData;
 
 	// Set modal to Edit mode
-	document.getElementById('dot-modal-title').innerText = "Edit Dot Info";
+	document.getElementById('dot-modal-title').innerText = "Muokkaa pistettä";
 	document.getElementById('edit-dot-id').value = id;
 	document.getElementById('dot-category').value = dot.categoryId;
 	document.getElementById('dot-comment').value = dot.comment || '';
