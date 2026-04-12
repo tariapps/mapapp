@@ -202,14 +202,17 @@
 		</div>
 	</div>
 
-	<div id="add-cat-modal" class="modal-overlay">
+	<div id="cat-modal" class="modal-overlay">
 		<div class="modal">
-			<h3>Add Category</h3>
-			<input type="text" id="new-cat-name" placeholder="Category Name">
-			<input type="color" id="new-cat-color" value="#bb86fc" style="height: 40px; padding: 0;">
+			<h3 id="cat-modal-title">Category</h3>
+			<input type="hidden" id="edit-cat-id">
+			<label style="font-size: 12px; color: var(--text-muted);">Name</label>
+			<input type="text" id="cat-name-input" placeholder="Category Name">
+			<label style="font-size: 12px; color: var(--text-muted);">Marker Color</label>
+			<input type="color" id="cat-color-input" value="#bb86fc" style="height: 40px; padding: 0;">
 			<div class="modal-actions">
-				<button class="btn" onclick="closeModal('add-cat-modal')">Cancel</button>
-				<button class="btn submit" onclick="saveNewCategory()">Save</button>
+				<button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
+				<button class="btn submit" onclick="saveCategory()">Save</button>
 			</div>
 		</div>
 	</div>
@@ -366,43 +369,81 @@
 		}
 
 		// --- Category Management Page ---
+		// --- Category Management Logic ---
+
 		async function loadCategoriesPage() {
 			const categories = await getAll('categories');
 			categories.sort((a, b) => a.order - b.order);
 			const list = document.getElementById('cat-manage-list');
-			list.innerHTML = categories.map((cat, index) => `
+			
+			list.innerHTML = categories.map((cat) => `
 				<div class="cat-manage-item">
-					<div style="display:flex; align-items:center; gap:10px;">
+					<div style="display:flex; align-items:center; gap:10px; flex-grow:1; cursor:pointer;" onclick="openEditCategoryModal('${cat.id}')">
 						<span class="color-dot" style="background-color: ${cat.color}; width:15px; height:15px; border-radius:50%; display:inline-block;"></span>
 						<span>${cat.name}</span>
+						<i class="fa fa-pencil" style="font-size: 12px; color: var(--text-muted); margin-left: 5px;"></i>
 					</div>
 					<div class="cat-manage-controls">
 						<button onclick="moveCategory('${cat.id}', -1)"><i class="fa fa-arrow-up"></i></button>
 						<button onclick="moveCategory('${cat.id}', 1)"><i class="fa fa-arrow-down"></i></button>
-						<button onclick="deleteCategory('${cat.id}', '${cat.name}')"><i class="fa fa-trash"></i></button>
+						<button onclick="deleteCategory('${cat.id}', '${cat.name}')"><i class="fa fa-trash" style="color:var(--danger)"></i></button>
 					</div>
 				</div>
 			`).join('');
 		}
 
-		function openAddCategoryModal() {
-			document.getElementById('new-cat-name').value = '';
-			openModal('add-cat-modal');
+		async function openEditCategoryModal(id) {
+			const categories = await getAll('categories');
+			const cat = categories.find(c => c.id === id);
+			if (!cat) return;
+
+			document.getElementById('cat-modal-title').innerText = "Edit Category";
+			document.getElementById('edit-cat-id').value = cat.id;
+			document.getElementById('cat-name-input').value = cat.name;
+			document.getElementById('cat-color-input').value = cat.color;
+			openModal('cat-modal');
 		}
 
-		async function saveNewCategory() {
-			const name = document.getElementById('new-cat-name').value.trim();
-			const color = document.getElementById('new-cat-color').value;
-			if (!name) return alert("Please enter a name");
+		function openAddCategoryModal() {
+			document.getElementById('cat-modal-title').innerText = "Add Category";
+			document.getElementById('edit-cat-id').value = ''; // Empty means "New"
+			document.getElementById('cat-name-input').value = '';
+			document.getElementById('cat-color-input').value = '#bb86fc';
+			openModal('cat-modal');
+		}
+
+		async function saveCategory() {
+			const id = document.getElementById('edit-cat-id').value;
+			const name = document.getElementById('cat-name-input').value.trim();
+			const color = document.getElementById('cat-color-input').value;
 			
-			const cats = await getAll('categories');
-			await putDb('categories', {
-				id: 'cat_' + Date.now(),
-				name: name, color: color, order: cats.length + 1
-			});
-			closeModal('add-cat-modal');
-			loadCategories();
-			loadCategoriesPage();
+			if (!name) return alert("Please enter a name");
+
+			const categories = await getAll('categories');
+
+			if (id) {
+				// EDIT EXISTING
+				const cat = categories.find(c => c.id === id);
+				cat.name = name;
+				cat.color = color;
+				await putDb('categories', cat);
+			} else {
+				// ADD NEW
+				const newCat = {
+					id: 'cat_' + Date.now(),
+					name: name,
+					color: color,
+					order: categories.length + 1
+				};
+				await putDb('categories', newCat);
+			}
+
+			closeModal('cat-modal');
+			loadCategories(); // Refresh top bar
+			loadCategoriesPage(); // Refresh list
+			
+			// Refresh map dots to show new colors/names
+			if (map) renderMapDots(); 
 		}
 
 		async function moveCategory(id, direction) {
