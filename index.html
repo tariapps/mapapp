@@ -201,6 +201,14 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	100% { stroke-width: 2; stroke-opacity: 0.8; }
 }
 
+
+/* Mittatikun tyyli */
+.leaflet-control-scale-line {
+    color: #000;
+	border-color:#000;
+	font-weight:bold;
+}
+
 </style>
 
 </head>
@@ -666,6 +674,14 @@ function initMap() {
 		maxZoom: 22,
 		maxNativeZoom: config.maxNativeZoom || 19,
 		attribution: config.attr
+	}).addTo(map);
+	
+	// Lisää mittatikkun vasempaan alakulmaan
+	L.control.scale({
+		metric: true,       // Näyttää metrit ja kilometrit
+		imperial: false,    // Piilottaa mailit ja jalat
+		maxWidth: 180,
+		position: 'bottomleft' // Sijainti kartalla
 	}).addTo(map);
 
 	// 4. NEW: Listen for map movements and save the state
