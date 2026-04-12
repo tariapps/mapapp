@@ -258,7 +258,6 @@ path.leaflet-interactive[stroke="#2196F3"] {
 				<option value="osm">Standard (High Contrast / Colorful)</option>
 				<option value="terrain">Terrain (Topography/Outdoor)</option>
 				<option value="mml_maasto">Suomen Maastokartta (MML)</option>
-				<option value="mml_vapaa">Suomen Maastokartta (Kapsi.fi)</option>
 				<option value="dark">Minimal Dark</option>
 				<option value="light">Minimal Light</option>
 			</select>
@@ -637,11 +636,6 @@ const MAP_STYLES = {
         url: 'https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png?api-key=391b8651-aa49-4300-81cc-f506e6e0e077',
         attr: '&copy; Maanmittauslaitos',
         maxNativeZoom: 18,
-    },
-	'mml_vapaa': {
-        url: 'https://tiles.kartat.kapsi.fi/maastokartta/{z}/{x}/{y}.jpg',
-        attr: '&copy; Maanmittauslaitos / Kapsi.fi',
-        maxNative: 18,
     },
 	'dark': {
 		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
