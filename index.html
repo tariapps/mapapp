@@ -188,16 +188,16 @@
 			</div>
 		</div>
 	</div>
-	
+		
 	<div id="add-dot-modal" class="modal-overlay">
 		<div class="modal">
-			<h3>Add New Dot</h3>
-			<p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
+			<h3 id="dot-modal-title">Add New Dot</h3>
+			<input type="hidden" id="edit-dot-id"> <p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
 			<select id="dot-category"></select>
 			<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
 			<div class="modal-actions">
 				<button class="btn" onclick="closeModal('add-dot-modal')">Cancel</button>
-				<button class="btn submit" onclick="saveNewDot()">Save</button>
+				<button class="btn submit" onclick="saveDot()">Save</button>
 			</div>
 		</div>
 	</div>
@@ -720,18 +720,17 @@
 			const dot = marker.dotData;
 			const cat = marker.catData;
 			const dateStr = new Date(dot.timestamp).toLocaleString();
-			
-			// Format for google maps pasting (e.g., 60.1234, 24.5678)
 			const coordsStr = `${dot.lat.toFixed(6)}, ${dot.lng.toFixed(6)}`;
 
 			const popupContent = `
-				<div>
+				<div id="popup-${dot.id}">
 					<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
 					<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
 					<p style="margin: 10px 0;">${dot.comment || '<i>No comment</i>'}</p>
-					<p style="font-family: monospace; background:#333; padding:5px; border-radius:3px;">${coordsStr}</p>
-					<div style="margin-top:15px; text-align:right;">
+					<p style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);">${coordsStr}</p>
+					<div style="margin-top:15px; display:flex; justify-content:space-between;">
 						<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
+						<button class="btn submit" onclick="openEditDotModal(${dot.id})" style="padding: 5px 15px; font-size:12px;">Edit</button>
 					</div>
 				</div>
 			`;
@@ -748,30 +747,47 @@
 
 		// --- Adding Dots ---
 		let pendingLocation = null;
-
+	
+		// Update your floating "+" button to clear the ID so it's fresh for a "New" dot
 		function openAddDotModal() {
-			document.getElementById('gps-status').innerText = "Acquiring current location...";
+			document.getElementById('dot-modal-title').innerText = "Add New Dot";
+			document.getElementById('edit-dot-id').value = ''; 
 			document.getElementById('dot-comment').value = '';
+			document.getElementById('gps-status').innerText = "Acquiring current location...";
 			openModal('add-dot-modal');
 
-			// Fetch fresh GPS
 			if ("geolocation" in navigator) {
 				navigator.geolocation.getCurrentPosition(pos => {
 					pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 					document.getElementById('gps-status').innerText = "Location acquired (Accuracy: " + Math.round(pos.coords.accuracy) + "m)";
 				}, err => {
-					document.getElementById('gps-status').innerText = "Failed to get location. Using map center.";
+					document.getElementById('gps-status').innerText = "Using map center.";
 					const center = map.getCenter();
 					pendingLocation = { lat: center.lat, lng: center.lng };
-				}, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
-			} else {
-				document.getElementById('gps-status').innerText = "Geolocation not supported. Using map center.";
-				const center = map.getCenter();
-				pendingLocation = { lat: center.lat, lng: center.lng };
+				}, { enableHighAccuracy: true });
 			}
 		}
 
-		async function saveNewDot() {
+		async function openEditDotModal(id) {
+			const marker = markersOnMap[id];
+			const dot = marker.dotData;
+
+			// Set modal to Edit mode
+			document.getElementById('dot-modal-title').innerText = "Edit Dot Info";
+			document.getElementById('edit-dot-id').value = id;
+			document.getElementById('dot-category').value = dot.categoryId;
+			document.getElementById('dot-comment').value = dot.comment || '';
+			document.getElementById('gps-status').innerText = "Updating existing location data";
+			
+			// We don't want to overwrite the GPS with current location when editing,
+			// so we set pendingLocation to the dot's current position.
+			pendingLocation = { lat: dot.lat, lng: dot.lng };
+
+			openModal('add-dot-modal');
+		}
+
+		async function saveDot() {
+			const editId = document.getElementById('edit-dot-id').value;
 			const catId = document.getElementById('dot-category').value;
 			const comment = document.getElementById('dot-comment').value.trim();
 			
@@ -780,26 +796,33 @@
 				return;
 			}
 
-			const newDot = {
-				categoryId: catId,
-				comment: comment,
-				lat: pendingLocation.lat,
-				lng: pendingLocation.lng,
-				timestamp: Date.now() // Standard Unix timestamp for easy formatting globally
-			};
-
-			await putDb('dots', newDot);
-			closeModal('add-dot-modal');
-			
-			// Ensure category is visible
-			if (!allCategoriesActive && !activeCategories.has(catId)) {
-				activeCategories.add(catId);
-				previousActiveCategories.add(catId);
-				loadCategories();
+			if (editId) {
+				// --- EDITING EXISTING DOT ---
+				const dots = await getAll('dots');
+				// IDs in IndexedDB can be numbers, so we parse it
+				const dot = dots.find(d => d.id == editId); 
+				if (dot) {
+					dot.categoryId = catId;
+					dot.comment = comment;
+					// Note: lat/lng are updated via dragging, we don't change them here 
+					// unless you explicitly want to move it to your current GPS.
+					await putDb('dots', dot);
+				}
+			} else {
+				// --- ADDING NEW DOT ---
+				const newDot = {
+					categoryId: catId,
+					comment: comment,
+					lat: pendingLocation.lat,
+					lng: pendingLocation.lng,
+					timestamp: Date.now()
+				};
+				await putDb('dots', newDot);
+				map.setView([pendingLocation.lat, pendingLocation.lng], 18);
 			}
 
-			map.setView([pendingLocation.lat, pendingLocation.lng], 18);
-			renderMapDots();
+			closeModal('add-dot-modal');
+			renderMapDots(); // Refresh map
 		}
 		
 		// --- Bootstrapping ---
