@@ -141,38 +141,38 @@ body, html {
 /* Inverted Crosshair Lines */
 /* True Inverting Crosshair */
 .map-crosshair {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 81px;  /* Size of the crosshair */
-    height: 81px;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 81px;  /* Size of the crosshair */
+	height: 81px;
+	transform: translate(-50%, -50%);
+	z-index: 1000;
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 /* Horizontal Inversion Line */
 .map-crosshair::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 1px;
-    /* This is the magic part: it inverts the map underneath */
-    backdrop-filter: invert(100%);
-    -webkit-backdrop-filter: invert(100%); /* Safari support */
+	content: '';
+	position: absolute;
+	width: 100%;
+	height: 1px;
+	/* This is the magic part: it inverts the map underneath */
+	backdrop-filter: invert(100%);
+	-webkit-backdrop-filter: invert(100%); /* Safari support */
 }
 
 /* Vertical Inversion Line */
 .map-crosshair::after {
-    content: '';
-    position: absolute;
-    width: 1px;
-    height: 100%;
-    backdrop-filter: invert(100%);
-    -webkit-backdrop-filter: invert(100%);
+	content: '';
+	position: absolute;
+	width: 1px;
+	height: 100%;
+	backdrop-filter: invert(100%);
+	-webkit-backdrop-filter: invert(100%);
 }
 
 
@@ -180,10 +180,26 @@ body, html {
 
 /* Force the browser to use the version 7 family name */
 .fa-solid, .fas {
-    font-family: "Font Awesome 7 Free" !important;
-    font-weight: 900 !important;
+	font-family: "Font Awesome 7 Free" !important;
+	font-weight: 900 !important;
 }
 
+.leaflet-tile {
+	/* This makes stretched tiles look 'blurred' rather than 'blocky' */
+	image-rendering: auto; 
+}
+
+/* Make the GPS circle breathe slightly */
+path.leaflet-interactive[stroke="#2196F3"] {
+	stroke-opacity: 0.8;
+	animation: pulsate 2s infinite ease-in-out;
+}
+
+@keyframes pulsate {
+	0% { stroke-width: 2; stroke-opacity: 0.8; }
+	50% { stroke-width: 4; stroke-opacity: 0.4; }
+	100% { stroke-width: 2; stroke-opacity: 0.8; }
+}
 
 </style>
 
@@ -202,10 +218,10 @@ body, html {
 </div>
 
 <div id="sidebar">
+	<div class="menu-item" onclick="switchPage('map-page')"><i class="fa-solid fa-map"></i> Kartta</div>
 	<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa-solid fa-tags"></i> Kategoriat</div>
 	<div class="menu-item" onclick="switchPage('list-page')"><i class="fa-solid fa-list"></i> Lista</div>
 	<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa-solid fa-cog"></i> Asetukset</div>
-	<div class="menu-item" onclick="switchPage('map-page')"><i class="fa-solid fa-map"></i> Kartta</div>
 </div>
 
 <div id="map-page" class="page active">
@@ -288,6 +304,7 @@ body, html {
 <script>
 // --- State Management ---
 let previewMap;
+let userLocationMarker = null;
 
 let map;
 let userLocation = null;
@@ -385,9 +402,10 @@ async function loadCategories() {
 	
 	// Build Top Bar
 	const scroller = document.getElementById('category-scroller');
-	scroller.innerHTML = `<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
-							<i class="fa-solid fa-star"></i> All
-						  </button>`;
+	scroller.innerHTML = `
+	<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
+		<i class="fa-solid fa-layer-group"></i> 
+	</button>`;
 	
 	categories.forEach(cat => {
 		if (allCategoriesActive) {
@@ -604,53 +622,87 @@ function focusDotFromList(dotId, catId) {
 const MAP_STYLES = {
 	'osm': {
 		url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-		attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		maxNativeZoom: 19,
 	},
 	'terrain': {
 		url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-		attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap'
+		attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap',
+		maxNativeZoom: 17,
 	},
 	'dark': {
 		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-		attr: '&copy; OpenStreetMap &copy; CARTO'
+		attr: '&copy; OpenStreetMap &copy; CARTO',
+		maxNativeZoom: 22,
 	},
 	'light': {
 		url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-		attr: '&copy; OpenStreetMap &copy; CARTO'
+		attr: '&copy; OpenStreetMap &copy; CARTO',
+		maxNativeZoom: 22,
 	}
 };
 function initMap() {
-    // 1. Load saved View State or use defaults
-    const savedLat = localStorage.getItem('lastMapLat') || 60.2;
-    const savedLng = localStorage.getItem('lastMapLng') || 24.9;
-    const savedZoom = localStorage.getItem('lastMapZoom') || 13;
-    const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-    
-    document.getElementById('map-style-select').value = savedStyle;
+	// 1. Load saved View State or use defaults
+	const savedLat = localStorage.getItem('lastMapLat') || 60.2;
+	const savedLng = localStorage.getItem('lastMapLng') || 24.9;
+	const savedZoom = localStorage.getItem('lastMapZoom') || 13;
+	const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+	
+	document.getElementById('map-style-select').value = savedStyle;
 
-    // 2. Initialize the map with the saved view
-    map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
-    
-    // 3. Apply the tile layer
-    const config = MAP_STYLES[savedStyle];
-    L.tileLayer(config.url, {
-        maxZoom: 19,
-        attribution: config.attr
-    }).addTo(map);
+	// 2. Initialize the map with the saved view
+	map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
+	
+	// 3. Apply the tile layer
+	const config = MAP_STYLES[savedStyle];
+	L.tileLayer(config.url, {
+		maxZoom: 22,
+		maxNativeZoom: config.maxNativeZoom || 19,
+		attribution: config.attr
+	}).addTo(map);
 
-    // 4. NEW: Listen for map movements and save the state
-    map.on('moveend', () => {
-        const center = map.getCenter();
-        localStorage.setItem('lastMapLat', center.lat);
-        localStorage.setItem('lastMapLng', center.lng);
-        localStorage.setItem('lastMapZoom', map.getZoom());
-    });
+	// 4. NEW: Listen for map movements and save the state
+	map.on('moveend', () => {
+		const center = map.getCenter();
+		localStorage.setItem('lastMapLat', center.lat);
+		localStorage.setItem('lastMapLng', center.lng);
+		localStorage.setItem('lastMapZoom', map.getZoom());
+	});
 
-    // Click empty map to deselect
-    map.on('click', () => { deselectCurrentMarker(); });
+	// Click empty map to deselect
+	map.on('click', () => { deselectCurrentMarker(); });
 
-    // Note: We REMOVE the automatic recenterMap() call here 
-    // so it doesn't override your saved view on startup.
+	// Note: We REMOVE the automatic recenterMap() call here 
+	// so it doesn't override your saved view on startup.
+	
+		
+	// Start watching the user's real-time location
+	map.locate({ watch: true, enableHighAccuracy: true });
+
+	// Event fired whenever the GPS position updates
+	map.on('locationfound', (e) => {
+		const radius = e.accuracy / 2; // Optional: use this if you want to show accuracy
+
+		if (!userLocationMarker) {
+			// Create the hollow blue circle if it doesn't exist
+			userLocationMarker = L.circle(e.latlng, {
+				radius: 10, // Physical size in meters
+				color: '#2196F3', // Blue outline
+				fillColor: '#2196F3',
+				fillOpacity: 0.1, // Very light center
+				weight: 2, // Thickness of the outline
+				interactive: false // Clicks pass through it
+			}).addTo(map);
+		} else {
+			// Just update the position if it already exists
+			userLocationMarker.setLatLng(e.latlng);
+		}
+	});
+
+	// Optional: Handle location errors
+	map.on('locationerror', (e) => {
+		console.warn("GPS access denied or signal lost.");
+	});
 }
 
 function initPreviewMap() {
@@ -684,7 +736,8 @@ function updateTiles(targetMap, style) {
 
 	const config = MAP_STYLES[style];
 	L.tileLayer(config.url, {
-		maxZoom: 19,
+		maxZoom: 22,
+		maxNativeZoom: config.maxNativeZoom || 19,
 		attribution: config.attr
 	}).addTo(targetMap);
 }
@@ -700,19 +753,30 @@ function changeMapStyle(style) {
 }
 
 function recenterMap() {
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            map.setView([lat, lng], 16);
-            
-            // Explicitly save this as the new last-viewed position
-            localStorage.setItem('lastMapLat', lat);
-            localStorage.setItem('lastMapLng', lng);
-        }, err => {
-            alert("Location access denied or unavailable.");
-        }, { enableHighAccuracy: true });
-    }
+	if (userLocationMarker) {
+		map.setView(userLocationMarker.getLatLng(), 17);
+	} else {
+		// Fallback if the watch hasn't found a position yet
+		navigator.geolocation.getCurrentPosition(pos => {
+			map.setView([pos.coords.latitude, pos.coords.longitude], 17);
+		});
+	}
+}
+
+function recenterMap2() {
+	if ("geolocation" in navigator) {
+		navigator.geolocation.getCurrentPosition(pos => {
+			const lat = pos.coords.latitude;
+			const lng = pos.coords.longitude;
+			map.setView([lat, lng], 16);
+			
+			// Explicitly save this as the new last-viewed position
+			localStorage.setItem('lastMapLat', lat);
+			localStorage.setItem('lastMapLng', lng);
+		}, err => {
+			alert("Location access denied or unavailable.");
+		}, { enableHighAccuracy: true });
+	}
 }
 
 // --- Marker Management ---
@@ -828,19 +892,19 @@ let pendingLocation = null;
 
 // Update your floating "+" button to clear the ID so it's fresh for a "New" dot
 function openAddDotModal() {
-    // 1. Reset Modal Fields
-    document.getElementById('dot-modal-title').innerText = "Add New Dot";
-    document.getElementById('edit-dot-id').value = ''; 
-    document.getElementById('dot-comment').value = '';
-    
-    // 2. Get the current center of the map view
-    const center = map.getCenter();
-    pendingLocation = { lat: center.lat, lng: center.lng };
+	// 1. Reset Modal Fields
+	document.getElementById('dot-modal-title').innerText = "Add New Dot";
+	document.getElementById('edit-dot-id').value = ''; 
+	document.getElementById('dot-comment').value = '';
+	
+	// 2. Get the current center of the map view
+	const center = map.getCenter();
+	pendingLocation = { lat: center.lat, lng: center.lng };
 
-    // 3. Update status text
-    document.getElementById('gps-status').innerText = `Placing at map center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
-    
-    openModal('add-dot-modal');
+	// 3. Update status text
+	document.getElementById('gps-status').innerText = `Placing at map center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
+	
+	openModal('add-dot-modal');
 }
 
 function openAddDotModal2() {
@@ -914,7 +978,7 @@ async function saveDot() {
 			timestamp: Date.now()
 		};
 		await putDb('dots', newDot);
-		map.setView([pendingLocation.lat, pendingLocation.lng], 18);
+		//map.setView([pendingLocation.lat, pendingLocation.lng], 18);
 	}
 
 	closeModal('add-dot-modal');
