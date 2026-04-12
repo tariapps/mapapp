@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<title>GeoTracker</title>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	
+	<style>
+		:root {
+			--bg-dark: #121212;
+			--bg-panel: #1e1e1e;
+			--text-main: #e0e0e0;
+			--text-muted: #a0a0a0;
+			--accent: #bb86fc;
+			--danger: #cf6679;
+			--top-bar-height: 60px;
+		}
+
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body, html {
+			height: 100%;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			overflow: hidden;
+		}
+
+		/* --- Top Bar & Navigation --- */
+		#top-bar {
+			height: var(--top-bar-height);
+			background-color: var(--bg-panel);
+			display: flex;
+			align-items: center;
+			border-bottom: 1px solid #333;
+			z-index: 1000;
+			position: relative;
+		}
+
+		#menu-btn {
+			background: none; border: none; color: var(--text-main);
+			font-size: 24px; padding: 15px; cursor: pointer;
+		}
+
+		#category-scroller {
+			display: flex; overflow-x: auto; white-space: nowrap; flex-grow: 1; padding-right: 15px;
+			scrollbar-width: none; /* Firefox */
+		}
+		#category-scroller::-webkit-scrollbar { display: none; } /* Chrome */
+
+		.cat-toggle {
+			background: #333; border: 2px solid transparent; color: var(--text-main);
+			padding: 5px 12px; border-radius: 20px; margin-right: 10px; cursor: pointer;
+			font-size: 14px; display: flex; align-items: center; gap: 5px; transition: 0.2s;
+		}
+		.cat-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
+		.cat-toggle .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+		/* --- Sidebar Menu --- */
+		#sidebar {
+			position: fixed; top: var(--top-bar-height); left: -250px; width: 250px;
+			height: calc(100% - var(--top-bar-height)); background-color: var(--bg-panel);
+			z-index: 2000; transition: left 0.3s ease; border-right: 1px solid #333;
+		}
+		#sidebar.open { left: 0; }
+		.menu-item {
+			padding: 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 15px;
+			font-size: 18px; cursor: pointer;
+		}
+		.menu-item:active { background-color: #333; }
+
+		/* --- Pages --- */
+		.page {
+			height: calc(100% - var(--top-bar-height)); width: 100%; position: absolute;
+			top: var(--top-bar-height); left: 0; display: none; overflow-y: auto;
+			background-color: var(--bg-dark); z-index: 10;
+		}
+		.page.active { display: block; }
+
+		/* --- Map Page --- */
+		#map { height: 100%; width: 100%; background: #000; }
+		
+		.floating-controls {
+			position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; z-index: 999;
+		}
+		.fab {
+			width: 50px; height: 50px; border-radius: 50%; border: none; background-color: var(--bg-panel);
+			color: var(--text-main); font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+			display: flex; align-items: center; justify-content: center; cursor: pointer;
+		}
+		.fab.primary { background-color: var(--accent); color: #000; }
+
+		/* Leaflet Overrides */
+		.leaflet-popup-content-wrapper { background-color: var(--bg-panel); color: var(--text-main); border-radius: 8px;}
+		.leaflet-popup-tip { background-color: var(--bg-panel); }
+		.leaflet-popup-content { margin: 13px; font-size: 14px; }
+		.leaflet-popup-content p { margin: 5px 0; }
+		.leaflet-container a.leaflet-popup-close-button { color: var(--text-main); }
+		
+		/* Custom Marker */
+		.custom-marker { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.8); transition: transform 0.2s, width 0.2s, height 0.2s; }
+		.custom-marker.selected { transform: scale(1.5); border: 2px solid var(--accent); z-index: 1000 !important; }
+
+		/* --- Lists & Forms --- */
+		.list-container { padding: 15px; }
+		.list-item {
+			background-color: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px;
+			cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+		}
+		.list-item-content h4 { margin-bottom: 5px; color: var(--accent); }
+		.list-item-date { font-size: 12px; color: var(--text-muted); }
+		
+		/* Modals */
+		.modal-overlay {
+			position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+			background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000;
+		}
+		.modal {
+			background: var(--bg-panel); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px;
+		}
+		.modal h3 { margin-bottom: 15px; }
+		.modal input, .modal select, .modal textarea {
+			width: 100%; padding: 10px; margin-bottom: 15px; background: #333; border: 1px solid #555;
+			color: var(--text-main); border-radius: 5px;
+		}
+		.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+		.btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: var(--text-main); background: #444; }
+		.btn.submit { background: var(--accent); color: #000; }
+		.btn.danger { background: var(--danger); color: #fff; }
+		
+		.cat-manage-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px;}
+		.cat-manage-controls button { background: none; border: none; color: var(--text-main); font-size: 16px; margin-left: 10px; cursor: pointer; }
+	</style>
+</head>
+<body>
+
+	<div id="top-bar">
+		<button id="menu-btn" onclick="toggleMenu()"><i class="fa fa-bars"></i></button>
+		<div id="category-scroller">
+			</div>
+	</div>
+
+	<div id="sidebar">
+		<div class="menu-item" onclick="switchPage('map-page')"><i class="fa fa-map"></i> Map</div>
+		<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa fa-tags"></i> Categories</div>
+		<div class="menu-item" onclick="switchPage('list-page')"><i class="fa fa-list"></i> List</div>
+		<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa fa-cog"></i> Settings</div>
+	</div>
+
+	<div id="map-page" class="page active">
+		<div id="map"></div>
+		<div class="floating-controls">
+			<button class="fab" onclick="recenterMap()"><i class="fa fa-crosshairs"></i></button>
+			<button class="fab primary" onclick="openAddDotModal()"><i class="fa fa-plus"></i></button>
+		</div>
+	</div>
+
+	<div id="categories-page" class="page">
+		<div class="list-container">
+			<h3 style="margin-bottom: 15px;">Manage Categories</h3>
+			<div id="cat-manage-list"></div>
+			<button class="btn submit" style="margin-top: 15px; width: 100%;" onclick="openAddCategoryModal()">+ Add Category</button>
+		</div>
+	</div>
+
+	<div id="list-page" class="page">
+		<div class="list-container" id="dots-list-container">
+		</div>
+	</div>
+
+	<div id="settings-page" class="page">
+		<div class="list-container">
+			<h3>Map Settings</h3>
+			
+			<div style="margin-top: 15px; background: #333; padding: 15px; border-radius: 8px;">
+				<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Tile Style</label>
+				<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
+					<option value="osm">Standard (High Contrast / Colorful)</option>
+					<option value="terrain">Terrain (Topography/Outdoor)</option>
+					<option value="dark">Minimal Dark</option>
+					<option value="light">Minimal Light</option>
+				</select>
+
+				<div id="preview-map" style="height: 180px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000;"></div>
+				<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Preview of selected style</p>
+			</div>
+		</div>
+	</div>
+	
+	<div id="add-dot-modal" class="modal-overlay">
+		<div class="modal">
+			<h3>Add New Dot</h3>
+			<p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
+			<select id="dot-category"></select>
+			<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
+			<div class="modal-actions">
+				<button class="btn" onclick="closeModal('add-dot-modal')">Cancel</button>
+				<button class="btn submit" onclick="saveNewDot()">Save</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="add-cat-modal" class="modal-overlay">
+		<div class="modal">
+			<h3>Add Category</h3>
+			<input type="text" id="new-cat-name" placeholder="Category Name">
+			<input type="color" id="new-cat-color" value="#bb86fc" style="height: 40px; padding: 0;">
+			<div class="modal-actions">
+				<button class="btn" onclick="closeModal('add-cat-modal')">Cancel</button>
+				<button class="btn submit" onclick="saveNewCategory()">Save</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	
+	<script>
+		// --- State Management ---
+		let previewMap;
+		
+		let map;
+		let userLocation = null;
+		let markersOnMap = {}; // Maps dot ID to Leaflet Marker object
+		let selectedMarkerId = null;
+		
+		let allCategoriesActive = true;
+		let activeCategories = new Set();
+		let previousActiveCategories = new Set();
+
+		let db;
+		const DB_NAME = 'GeoTrackerDB';
+		const DB_VERSION = 1;
+
+		// --- IndexedDB Initialization ---
+		function initDB() {
+			return new Promise((resolve, reject) => {
+				const request = indexedDB.open(DB_NAME, DB_VERSION);
+				
+				request.onupgradeneeded = (event) => {
+					db = event.target.result;
+					if (!db.objectStoreNames.contains('categories')) {
+						const catStore = db.createObjectStore('categories', { keyPath: 'id' });
+						// Add defaults
+						catStore.add({ id: 'cat_' + Date.now(), name: 'Mushrooms', color: '#ff5555', order: 1 });
+						catStore.add({ id: 'cat_' + (Date.now()+1), name: 'Plants', color: '#55ff55', order: 2 });
+						catStore.add({ id: 'cat_' + (Date.now()+2), name: 'Animals', color: '#5555ff', order: 3 });
+					}
+					if (!db.objectStoreNames.contains('dots')) {
+						const dotStore = db.createObjectStore('dots', { keyPath: 'id', autoIncrement: true });
+						dotStore.createIndex('timestamp', 'timestamp', { unique: false });
+					}
+				};
+				
+				request.onsuccess = (event) => {
+					db = event.target.result;
+					resolve();
+				};
+				request.onerror = (event) => reject(event.target.error);
+			});
+		}
+
+		// DB Helpers
+		function getAll(storeName) {
+			return new Promise((resolve) => {
+				const tx = db.transaction(storeName, 'readonly');
+				const store = tx.objectStore(storeName);
+				const req = store.getAll();
+				req.onsuccess = () => resolve(req.result);
+			});
+		}
+		
+		function putDb(storeName, item) {
+			return new Promise((resolve) => {
+				const tx = db.transaction(storeName, 'readwrite');
+				tx.objectStore(storeName).put(item);
+				tx.oncomplete = () => resolve(item);
+			});
+		}
+
+		function deleteDb(storeName, id) {
+			return new Promise((resolve) => {
+				const tx = db.transaction(storeName, 'readwrite');
+				tx.objectStore(storeName).delete(id);
+				tx.oncomplete = () => resolve();
+			});
+		}
+
+		// --- UI Interactions ---
+		function toggleMenu() {
+			const sidebar = document.getElementById('sidebar');
+			sidebar.classList.toggle('open');
+		}
+
+		function switchPage(pageId) {
+			document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+			document.getElementById(pageId).classList.add('active');
+			toggleMenu();
+			
+			if (pageId === 'map-page') { 
+				map.invalidateSize(); 
+			}
+			if (pageId === 'categories-page') { loadCategoriesPage(); }
+			if (pageId === 'list-page') { loadListPage(); }
+			if (pageId === 'settings-page') { initPreviewMap(); } // New call
+		}
+
+		function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+		function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+		// --- Categories Logic ---
+		async function loadCategories() {
+			const categories = await getAll('categories');
+			categories.sort((a, b) => a.order - b.order);
+			
+			// Build Top Bar
+			const scroller = document.getElementById('category-scroller');
+			scroller.innerHTML = `<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
+									<i class="fa fa-star"></i> All
+								  </button>`;
+			
+			categories.forEach(cat => {
+				if (allCategoriesActive) {
+					activeCategories.add(cat.id);
+				}
+				const isActive = activeCategories.has(cat.id);
+				const opacityStyle = (!allCategoriesActive && !isActive) ? 'opacity: 0.5;' : '';
+				const activeClass = isActive && !allCategoriesActive ? 'active' : '';
+
+				scroller.innerHTML += `
+					<button class="cat-toggle ${activeClass}" style="${opacityStyle}" onclick="toggleCategory('${cat.id}')" id="btn-${cat.id}">
+						<span class="color-dot" style="background-color: ${cat.color};"></span> ${cat.name}
+					</button>`;
+			});
+
+			// Populate Add Dot dropdown
+			const select = document.getElementById('dot-category');
+			select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+			
+			renderMapDots();
+		}
+
+		function toggleStar() {
+			allCategoriesActive = !allCategoriesActive;
+			if (allCategoriesActive) {
+				previousActiveCategories = new Set(activeCategories);
+			} else {
+				activeCategories = new Set(previousActiveCategories);
+			}
+			loadCategories();
+		}
+
+		async function toggleCategory(catId) {
+			if (allCategoriesActive) {
+				allCategoriesActive = false;
+				activeCategories.clear();
+			}
+			if (activeCategories.has(catId)) {
+				activeCategories.delete(catId);
+			} else {
+				activeCategories.add(catId);
+			}
+			previousActiveCategories = new Set(activeCategories);
+			loadCategories();
+		}
+
+		// --- Category Management Page ---
+		async function loadCategoriesPage() {
+			const categories = await getAll('categories');
+			categories.sort((a, b) => a.order - b.order);
+			const list = document.getElementById('cat-manage-list');
+			list.innerHTML = categories.map((cat, index) => `
+				<div class="cat-manage-item">
+					<div style="display:flex; align-items:center; gap:10px;">
+						<span class="color-dot" style="background-color: ${cat.color}; width:15px; height:15px; border-radius:50%; display:inline-block;"></span>
+						<span>${cat.name}</span>
+					</div>
+					<div class="cat-manage-controls">
+						<button onclick="moveCategory('${cat.id}', -1)"><i class="fa fa-arrow-up"></i></button>
+						<button onclick="moveCategory('${cat.id}', 1)"><i class="fa fa-arrow-down"></i></button>
+						<button onclick="deleteCategory('${cat.id}', '${cat.name}')"><i class="fa fa-trash"></i></button>
+					</div>
+				</div>
+			`).join('');
+		}
+
+		function openAddCategoryModal() {
+			document.getElementById('new-cat-name').value = '';
+			openModal('add-cat-modal');
+		}
+
+		async function saveNewCategory() {
+			const name = document.getElementById('new-cat-name').value.trim();
+			const color = document.getElementById('new-cat-color').value;
+			if (!name) return alert("Please enter a name");
+			
+			const cats = await getAll('categories');
+			await putDb('categories', {
+				id: 'cat_' + Date.now(),
+				name: name, color: color, order: cats.length + 1
+			});
+			closeModal('add-cat-modal');
+			loadCategories();
+			loadCategoriesPage();
+		}
+
+		async function moveCategory(id, direction) {
+			let cats = await getAll('categories');
+			cats.sort((a, b) => a.order - b.order);
+			const index = cats.findIndex(c => c.id === id);
+			if (index < 0 || index + direction < 0 || index + direction >= cats.length) return;
+			
+			// Swap orders
+			let temp = cats[index].order;
+			cats[index].order = cats[index + direction].order;
+			cats[index + direction].order = temp;
+			
+			await putDb('categories', cats[index]);
+			await putDb('categories', cats[index + direction]);
+			loadCategoriesPage();
+			loadCategories();
+		}
+
+		async function deleteCategory(id, name) {
+			if (confirm(`Delete category "${name}"? ALL dots in this category will be removed permanently.`)) {
+				await deleteDb('categories', id);
+				// Cascading delete for dots
+				const dots = await getAll('dots');
+				for (let dot of dots) {
+					if (dot.categoryId === id) {
+						await deleteDb('dots', dot.id);
+					}
+				}
+				activeCategories.delete(id);
+				previousActiveCategories.delete(id);
+				loadCategoriesPage();
+				loadCategories();
+				if(document.getElementById('map-page').classList.contains('active')) renderMapDots();
+			}
+		}
+
+		// --- List Page ---
+		async function loadListPage() {
+			const dots = await getAll('dots');
+			const categories = await getAll('categories');
+			const catMap = {};
+			categories.forEach(c => catMap[c.id] = c);
+
+			// Sort newest first
+			dots.sort((a, b) => b.timestamp - a.timestamp);
+
+			const container = document.getElementById('dots-list-container');
+			if (dots.length === 0) {
+				container.innerHTML = "<p style='color: var(--text-muted)'>No dots placed yet.</p>";
+				return;
+			}
+
+			container.innerHTML = dots.map(dot => {
+				const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
+				const dateStr = new Date(dot.timestamp).toLocaleString(); // Localized format
+				return `
+					<div class="list-item" onclick="focusDotFromList(${dot.id}, '${dot.categoryId}')">
+						<div class="list-item-content">
+							<h4 style="color: ${cat.color};">${cat.name}</h4>
+							<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || 'No comment'}</p>
+							<span class="list-item-date">${dateStr}</span>
+						</div>
+						<i class="fa fa-chevron-right" style="color: var(--text-muted)"></i>
+					</div>
+				`;
+			}).join('');
+		}
+
+		function focusDotFromList(dotId, catId) {
+			// Enable category if it's not active
+			if (!allCategoriesActive && !activeCategories.has(catId)) {
+				activeCategories.add(catId);
+				previousActiveCategories.add(catId);
+				loadCategories();
+			}
+			
+			// Switch to map
+			switchPage('map-page');
+			
+			// Wait slightly for map size invalidation
+			setTimeout(async () => {
+				const marker = markersOnMap[dotId];
+				if (marker) {
+					map.setView(marker.getLatLng(), 18);
+					selectMarker(dotId);
+				}
+			}, 300);
+		}
+// --- Map Styles Configuration ---
+const MAP_STYLES = {
+    'osm': {
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    },
+    'terrain': {
+        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap'
+    },
+    'dark': {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attr: '&copy; OpenStreetMap &copy; CARTO'
+    },
+    'light': {
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attr: '&copy; OpenStreetMap &copy; CARTO'
+    }
+};
+
+function initMap() {
+    // 1. Determine the starting style (Default to 'osm')
+    const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+    
+    // Set the dropdown to match the saved style
+    document.getElementById('map-style-select').value = savedStyle;
+
+    // 2. Initialize the map
+    map = L.map('map', { zoomControl: false }).setView([60.2, 24.9], 13);
+    
+    // 3. Apply the preferred tile layer
+    const config = MAP_STYLES[savedStyle];
+    L.tileLayer(config.url, {
+        maxZoom: 19,
+        attribution: config.attr
+    }).addTo(map);
+
+    // Click empty map to deselect
+    map.on('click', () => { deselectCurrentMarker(); });
+
+    // Initial GPS focus
+    recenterMap();
+}
+
+function initPreviewMap() {
+    const style = localStorage.getItem('preferredMapStyle') || 'osm';
+    
+    // Initialize preview map if it doesn't exist
+    if (!previewMap) {
+        previewMap = L.map('preview-map', { 
+            zoomControl: false,
+            attributionControl: false, // Keep it clean for the preview
+            dragging: false,
+            touchZoom: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false
+        }).setView([60.1699, 24.9384], 12); // Sample location (Helsinki)
+    }
+
+    // Refresh size in case container was hidden
+    setTimeout(() => { previewMap.invalidateSize(); }, 100);
+    
+    updateTiles(previewMap, style);
+}
+
+function updateTiles(targetMap, style) {
+    // Remove existing tile layers from the target map
+    targetMap.eachLayer((layer) => {
+        if (layer instanceof L.TileLayer) {
+            targetMap.removeLayer(layer);
+        }
+    });
+
+    const config = MAP_STYLES[style];
+    L.tileLayer(config.url, {
+        maxZoom: 19,
+        attribution: config.attr
+    }).addTo(targetMap);
+}
+
+function changeMapStyle(style) {
+    localStorage.setItem('preferredMapStyle', style);
+    
+    // Update both the main map and the preview map
+    updateTiles(map, style);
+    if (previewMap) {
+        updateTiles(previewMap, style);
+    }
+}
+
+		function recenterMap() {
+			if ("geolocation" in navigator) {
+				navigator.geolocation.getCurrentPosition(pos => {
+					userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+					map.setView([userLocation.lat, userLocation.lng], 16);
+				}, err => {
+					alert("Unable to retrieve your location. Check permissions.");
+				}, { enableHighAccuracy: true });
+			} else {
+				alert("Geolocation is not supported by your browser");
+			}
+		}
+
+		// --- Marker Management ---
+		async function renderMapDots() {
+			// Clear existing
+			for (let id in markersOnMap) {
+				map.removeLayer(markersOnMap[id]);
+			}
+			markersOnMap = {};
+			selectedMarkerId = null;
+
+			const dots = await getAll('dots');
+			const categories = await getAll('categories');
+			const catMap = {};
+			categories.forEach(c => catMap[c.id] = c);
+
+			dots.forEach(dot => {
+				// Filter logic
+				if (!allCategoriesActive && !activeCategories.has(dot.categoryId)) return;
+
+				const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
+				
+				const iconHtml = `<div class="custom-marker" style="background-color: ${cat.color}; width: 20px; height: 20px;"></div>`;
+				const customIcon = L.divIcon({
+					className: '', html: iconHtml, iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10]
+				});
+
+				const marker = L.marker([dot.lat, dot.lng], {
+					icon: customIcon,
+					draggable: false 
+				}).addTo(map);
+
+				// Store reference
+				marker.dotData = dot;
+				marker.catData = cat;
+				markersOnMap[dot.id] = marker;
+
+				// Click events
+				marker.on('click', (e) => {
+					L.DomEvent.stopPropagation(e);
+					if (selectedMarkerId === dot.id) {
+						// Already selected, open popup
+						openDotPopup(dot.id);
+					} else {
+						// Select it
+						selectMarker(dot.id);
+					}
+				});
+
+				// Drag end event to update GPS location
+				marker.on('dragend', async (e) => {
+					const newPos = marker.getLatLng();
+					dot.lat = newPos.lat;
+					dot.lng = newPos.lng;
+					await putDb('dots', dot); // update DB
+				});
+			});
+		}
+
+		function deselectCurrentMarker() {
+			if (selectedMarkerId && markersOnMap[selectedMarkerId]) {
+				const marker = markersOnMap[selectedMarkerId];
+				marker.dragging.disable();
+				const el = marker.getElement().querySelector('.custom-marker');
+				if(el) el.classList.remove('selected');
+				marker.closePopup();
+			}
+			selectedMarkerId = null;
+		}
+
+		function selectMarker(id) {
+			deselectCurrentMarker();
+			selectedMarkerId = id;
+			const marker = markersOnMap[id];
+			marker.dragging.enable();
+			
+			const el = marker.getElement().querySelector('.custom-marker');
+			if(el) el.classList.add('selected');
+		}
+
+		function openDotPopup(id) {
+			const marker = markersOnMap[id];
+			const dot = marker.dotData;
+			const cat = marker.catData;
+			const dateStr = new Date(dot.timestamp).toLocaleString();
+			
+			// Format for google maps pasting (e.g., 60.1234, 24.5678)
+			const coordsStr = `${dot.lat.toFixed(6)}, ${dot.lng.toFixed(6)}`;
+
+			const popupContent = `
+				<div>
+					<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
+					<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
+					<p style="margin: 10px 0;">${dot.comment || '<i>No comment</i>'}</p>
+					<p style="font-family: monospace; background:#333; padding:5px; border-radius:3px;">${coordsStr}</p>
+					<div style="margin-top:15px; text-align:right;">
+						<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
+					</div>
+				</div>
+			`;
+			
+			marker.bindPopup(popupContent).openPopup();
+		}
+
+		async function deleteDot(id) {
+			if (confirm("Delete this dot permanently?")) {
+				await deleteDb('dots', id);
+				renderMapDots();
+			}
+		}
+
+		// --- Adding Dots ---
+		let pendingLocation = null;
+
+		function openAddDotModal() {
+			document.getElementById('gps-status').innerText = "Acquiring current location...";
+			document.getElementById('dot-comment').value = '';
+			openModal('add-dot-modal');
+
+			// Fetch fresh GPS
+			if ("geolocation" in navigator) {
+				navigator.geolocation.getCurrentPosition(pos => {
+					pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+					document.getElementById('gps-status').innerText = "Location acquired (Accuracy: " + Math.round(pos.coords.accuracy) + "m)";
+				}, err => {
+					document.getElementById('gps-status').innerText = "Failed to get location. Using map center.";
+					const center = map.getCenter();
+					pendingLocation = { lat: center.lat, lng: center.lng };
+				}, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+			} else {
+				document.getElementById('gps-status').innerText = "Geolocation not supported. Using map center.";
+				const center = map.getCenter();
+				pendingLocation = { lat: center.lat, lng: center.lng };
+			}
+		}
+
+		async function saveNewDot() {
+			const catId = document.getElementById('dot-category').value;
+			const comment = document.getElementById('dot-comment').value.trim();
+			
+			if (!pendingLocation) {
+				alert("Still waiting for location...");
+				return;
+			}
+
+			const newDot = {
+				categoryId: catId,
+				comment: comment,
+				lat: pendingLocation.lat,
+				lng: pendingLocation.lng,
+				timestamp: Date.now() // Standard Unix timestamp for easy formatting globally
+			};
+
+			await putDb('dots', newDot);
+			closeModal('add-dot-modal');
+			
+			// Ensure category is visible
+			if (!allCategoriesActive && !activeCategories.has(catId)) {
+				activeCategories.add(catId);
+				previousActiveCategories.add(catId);
+				loadCategories();
+			}
+
+			map.setView([pendingLocation.lat, pendingLocation.lng], 18);
+			renderMapDots();
+		}
+		
+		// --- Bootstrapping ---
+		window.onload = async () => {
+			await initDB();
+			initMap();
+			await loadCategories();
+		};
+
+	</script>
+</body>
+</html>
