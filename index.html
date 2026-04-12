@@ -4,834 +4,920 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 	<title>MapApp</title>
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<!--<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />-->
+	<link rel="stylesheet" href="css/leaflet.css" />
 	
-	<style>
-		:root {
-			--bg-dark: #121212;
-			--bg-panel: #1e1e1e;
-			--text-main: #e0e0e0;
-			--text-muted: #a0a0a0;
-			--accent: #bb86fc;
-			--danger: #cf6679;
-			--top-bar-height: 60px;
-		}
+	<!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">-->
+	<link rel="stylesheet" href="css/all.min.css">
+	
+<style>
+:root {
+	--bg-dark: #121212;
+	--bg-panel: #1e1e1e;
+	--text-main: #e0e0e0;
+	--text-muted: #a0a0a0;
+	--accent: #bb86fc;
+	--danger: #cf6679;
+	--top-bar-height: 60px;
+}
 
-		* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-		body, html {
-			height: 100%;
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-			background-color: var(--bg-dark);
-			color: var(--text-main);
-			overflow: hidden;
-		}
+body, html {
+	height: 100%;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	background-color: var(--bg-dark);
+	color: var(--text-main);
+	overflow: hidden;
+}
 
-		/* --- Top Bar & Navigation --- */
-		#top-bar {
-			height: var(--top-bar-height);
-			background-color: var(--bg-panel);
-			display: flex;
-			align-items: center;
-			border-bottom: 1px solid #333;
-			z-index: 1000;
-			position: relative;
-		}
+/* --- Top Bar & Navigation --- */
+#top-bar {
+	height: var(--top-bar-height);
+	background-color: var(--bg-panel);
+	display: flex;
+	align-items: center;
+	border-bottom: 1px solid #333;
+	z-index: 1000;
+	position: relative;
+}
 
-		#menu-btn {
-			background: none; border: none; color: var(--text-main);
-			font-size: 24px; padding: 15px; cursor: pointer;
-		}
+#menu-btn {
+	background: none; border: none; color: var(--text-main);
+	font-size: 24px; padding: 15px; cursor: pointer;
+}
 
-		#category-scroller {
-			display: flex; overflow-x: auto; white-space: nowrap; flex-grow: 1; padding-right: 15px;
-			scrollbar-width: none; /* Firefox */
-		}
-		#category-scroller::-webkit-scrollbar { display: none; } /* Chrome */
+#category-scroller {
+	display: flex; overflow-x: auto; white-space: nowrap; flex-grow: 1; padding-right: 15px;
+	scrollbar-width: none; /* Firefox */
+}
+#category-scroller::-webkit-scrollbar { display: none; } /* Chrome */
 
-		.cat-toggle {
-			background: #333; border: 2px solid transparent; color: var(--text-main);
-			padding: 5px 12px; border-radius: 20px; margin-right: 10px; cursor: pointer;
-			font-size: 14px; display: flex; align-items: center; gap: 5px; transition: 0.2s;
-		}
-		.cat-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
-		.cat-toggle .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.cat-toggle {
+	background: #333; border: 2px solid transparent; color: var(--text-main);
+	padding: 5px 12px; border-radius: 20px; margin-right: 10px; cursor: pointer;
+	font-size: 14px; display: flex; align-items: center; gap: 5px; transition: 0.2s;
+}
+.cat-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.cat-toggle .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
-		/* --- Sidebar Menu --- */
-		#sidebar {
-			position: fixed; top: var(--top-bar-height); left: -250px; width: 250px;
-			height: calc(100% - var(--top-bar-height)); background-color: var(--bg-panel);
-			z-index: 2000; transition: left 0.3s ease; border-right: 1px solid #333;
-		}
-		#sidebar.open { left: 0; }
-		.menu-item {
-			padding: 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 15px;
-			font-size: 18px; cursor: pointer;
-		}
-		.menu-item:active { background-color: #333; }
+/* --- Sidebar Menu --- */
+#sidebar {
+	position: fixed; top: var(--top-bar-height); left: -250px; width: 250px;
+	height: calc(100% - var(--top-bar-height)); background-color: var(--bg-panel);
+	z-index: 2000; transition: left 0.3s ease; border-right: 1px solid #333;
+}
+#sidebar.open { left: 0; }
+.menu-item {
+	padding: 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 15px;
+	font-size: 18px; cursor: pointer;
+}
+.menu-item:active { background-color: #333; }
 
-		/* --- Pages --- */
-		.page {
-			height: calc(100% - var(--top-bar-height)); width: 100%; position: absolute;
-			top: var(--top-bar-height); left: 0; display: none; overflow-y: auto;
-			background-color: var(--bg-dark); z-index: 10;
-		}
-		.page.active { display: block; }
+/* --- Pages --- */
+.page {
+	height: calc(100% - var(--top-bar-height)); width: 100%; position: absolute;
+	top: var(--top-bar-height); left: 0; display: none; overflow-y: auto;
+	background-color: var(--bg-dark); z-index: 10;
+}
+.page.active { display: block; }
 
-		/* --- Map Page --- */
-		#map { height: 100%; width: 100%; background: #000; }
-		
-		.floating-controls {
-			position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; z-index: 999;
-		}
-		.fab {
-			width: 50px; height: 50px; border-radius: 50%; border: none; background-color: var(--bg-panel);
-			color: var(--text-main); font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-			display: flex; align-items: center; justify-content: center; cursor: pointer;
-		}
-		.fab.primary { background-color: var(--accent); color: #000; }
+/* --- Map Page --- */
+#map { height: 100%; width: 100%; background: #000; }
 
-		/* Leaflet Overrides */
-		.leaflet-popup-content-wrapper { background-color: var(--bg-panel); color: var(--text-main); border-radius: 8px;}
-		.leaflet-popup-tip { background-color: var(--bg-panel); }
-		.leaflet-popup-content { margin: 13px; font-size: 14px; }
-		.leaflet-popup-content p { margin: 5px 0; }
-		.leaflet-container a.leaflet-popup-close-button { color: var(--text-main); }
-		
-		/* Custom Marker */
-		.custom-marker { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.8); transition: transform 0.2s, width 0.2s, height 0.2s; }
-		.custom-marker.selected { transform: scale(1.5); border: 2px solid var(--accent); z-index: 1000 !important; }
+.floating-controls {
+	position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; z-index: 999;
+}
+.fab {
+	width: 50px; height: 50px; border-radius: 50%; border: none; background-color: var(--bg-panel);
+	color: var(--text-main); font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+	display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.fab.primary { background-color: var(--accent); color: #000; }
 
-		/* --- Lists & Forms --- */
-		.list-container { padding: 15px; }
-		.list-item {
-			background-color: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px;
-			cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-		}
-		.list-item-content h4 { margin-bottom: 5px; color: var(--accent); }
-		.list-item-date { font-size: 12px; color: var(--text-muted); }
-		
-		/* Modals */
-		.modal-overlay {
-			position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-			background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000;
-		}
-		.modal {
-			background: var(--bg-panel); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px;
-		}
-		.modal h3 { margin-bottom: 15px; }
-		.modal input, .modal select, .modal textarea {
-			width: 100%; padding: 10px; margin-bottom: 15px; background: #333; border: 1px solid #555;
-			color: var(--text-main); border-radius: 5px;
-		}
-		.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-		.btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: var(--text-main); background: #444; }
-		.btn.submit { background: var(--accent); color: #000; }
-		.btn.danger { background: var(--danger); color: #fff; }
-		
-		.cat-manage-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px;}
-		.cat-manage-controls button { background: none; border: none; color: var(--text-main); font-size: 16px; margin-left: 10px; cursor: pointer; }
-	</style>
+/* Leaflet Overrides */
+.leaflet-popup-content-wrapper { background-color: var(--bg-panel); color: var(--text-main); border-radius: 8px;}
+.leaflet-popup-tip { background-color: var(--bg-panel); }
+.leaflet-popup-content { margin: 13px; font-size: 14px; }
+.leaflet-popup-content p { margin: 5px 0; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--text-main); }
+
+/* Custom Marker */
+.custom-marker { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.8); transition: transform 0.2s, width 0.2s, height 0.2s; }
+.custom-marker.selected { transform: scale(1.5); border: 2px solid var(--accent); z-index: 1000 !important; }
+
+/* --- Lists & Forms --- */
+.list-container { padding: 15px; }
+.list-item {
+	background-color: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px;
+	cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+}
+.list-item-content h4 { margin-bottom: 5px; color: var(--accent); }
+.list-item-date { font-size: 12px; color: var(--text-muted); }
+
+/* Modals */
+.modal-overlay {
+	position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+	background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000;
+}
+.modal {
+	background: var(--bg-panel); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px;
+}
+.modal h3 { margin-bottom: 15px; }
+.modal input, .modal select, .modal textarea {
+	width: 100%; padding: 10px; margin-bottom: 15px; background: #333; border: 1px solid #555;
+	color: var(--text-main); border-radius: 5px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: var(--text-main); background: #444; }
+.btn.submit { background: var(--accent); color: #000; }
+.btn.danger { background: var(--danger); color: #fff; }
+
+.cat-manage-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px;}
+.cat-manage-controls button { background: none; border: none; color: var(--text-main); font-size: 16px; margin-left: 10px; cursor: pointer; }
+
+
+/* Center Map Crosshair */
+/* Inverted Crosshair Lines */
+/* True Inverting Crosshair */
+.map-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80px;  /* Size of the crosshair */
+    height: 80px;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Horizontal Inversion Line */
+.map-crosshair::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    /* This is the magic part: it inverts the map underneath */
+    backdrop-filter: invert(100%);
+    -webkit-backdrop-filter: invert(100%); /* Safari support */
+}
+
+/* Vertical Inversion Line */
+.map-crosshair::after {
+    content: '';
+    position: absolute;
+    width: 1px;
+    height: 100%;
+    backdrop-filter: invert(100%);
+    -webkit-backdrop-filter: invert(100%);
+}
+
+
+
+
+/* Force the browser to use the version 7 family name */
+.fa-solid, .fas {
+    font-family: "Font Awesome 7 Free" !important;
+    font-weight: 900 !important;
+}
+
+
+</style>
+
 </head>
+
+
+
+
+
 <body>
 
-	<div id="top-bar">
-		<button id="menu-btn" onclick="toggleMenu()"><i class="fa fa-bars"></i></button>
-		<div id="category-scroller">
-			</div>
-	</div>
-
-	<div id="sidebar">
-		<div class="menu-item" onclick="switchPage('map-page')"><i class="fa fa-map"></i> Map</div>
-		<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa fa-tags"></i> Categories</div>
-		<div class="menu-item" onclick="switchPage('list-page')"><i class="fa fa-list"></i> List</div>
-		<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa fa-cog"></i> Settings</div>
-	</div>
-
-	<div id="map-page" class="page active">
-		<div id="map"></div>
-		<div class="floating-controls">
-			<button class="fab" onclick="recenterMap()"><i class="fa fa-crosshairs"></i></button>
-			<button class="fab primary" onclick="openAddDotModal()"><i class="fa fa-plus"></i></button>
+<div id="top-bar">
+	<button id="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+	<div id="category-scroller">
 		</div>
-	</div>
+</div>
 
-	<div id="categories-page" class="page">
-		<div class="list-container">
-			<h3 style="margin-bottom: 15px;">Manage Categories</h3>
-			<div id="cat-manage-list"></div>
-			<button class="btn submit" style="margin-top: 15px; width: 100%;" onclick="openAddCategoryModal()">+ Add Category</button>
-		</div>
-	</div>
+<div id="sidebar">
+	<div class="menu-item" onclick="switchPage('map-page')"><i class="fa-solid fa-map"></i> Map</div>
+	<div class="menu-item" onclick="switchPage('categories-page')"><i class="fa-solid fa-tags"></i> Categories</div>
+	<div class="menu-item" onclick="switchPage('list-page')"><i class="fa-solid fa-list"></i> List</div>
+	<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa-solid fa-cog"></i> Settings</div>
+</div>
 
-	<div id="list-page" class="page">
-		<div class="list-container" id="dots-list-container">
-		</div>
-	</div>
-
-	<div id="settings-page" class="page">
-		<div class="list-container">
-			<h3>Map Settings</h3>
-			
-			<div style="margin-top: 15px; background: #333; padding: 15px; border-radius: 8px;">
-				<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Tile Style</label>
-				<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
-					<option value="osm">Standard (High Contrast / Colorful)</option>
-					<option value="terrain">Terrain (Topography/Outdoor)</option>
-					<option value="dark">Minimal Dark</option>
-					<option value="light">Minimal Light</option>
-				</select>
-
-				<div id="preview-map" style="height: 180px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000;"></div>
-				<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Preview of selected style</p>
-			</div>
-		</div>
-	</div>
-		
-	<div id="add-dot-modal" class="modal-overlay">
-		<div class="modal">
-			<h3 id="dot-modal-title">Add New Dot</h3>
-			<input type="hidden" id="edit-dot-id"> <p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
-			<select id="dot-category"></select>
-			<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
-			<div class="modal-actions">
-				<button class="btn" onclick="closeModal('add-dot-modal')">Cancel</button>
-				<button class="btn submit" onclick="saveDot()">Save</button>
-			</div>
-		</div>
-	</div>
-
-	<div id="cat-modal" class="modal-overlay">
-		<div class="modal">
-			<h3 id="cat-modal-title">Category</h3>
-			<input type="hidden" id="edit-cat-id">
-			<label style="font-size: 12px; color: var(--text-muted);">Name</label>
-			<input type="text" id="cat-name-input" placeholder="Category Name">
-			<label style="font-size: 12px; color: var(--text-muted);">Marker Color</label>
-			<input type="color" id="cat-color-input" value="#bb86fc" style="height: 40px; padding: 0;">
-			<div class="modal-actions">
-				<button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
-				<button class="btn submit" onclick="saveCategory()">Save</button>
-			</div>
-		</div>
-	</div>
-
-	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div id="map-page" class="page active">
+	<div id="map"></div>
 	
-	<script>
-		// --- State Management ---
-		let previewMap;
+	<div class="map-crosshair"></div>
+	
+	<div class="floating-controls">
+		<button class="fab" onclick="recenterMap()"><i class="fa-solid fa-crosshairs"></i></button>
+		<button class="fab primary" onclick="openAddDotModal()"><i class="fa-solid fa-plus"></i></button>
+	</div>
+</div>
+
+<div id="categories-page" class="page">
+	<div class="list-container">
+		<h3 style="margin-bottom: 15px;">Manage Categories</h3>
+		<div id="cat-manage-list"></div>
+		<button class="btn submit" style="margin-top: 15px; width: 100%;" onclick="openAddCategoryModal()">+ Add Category</button>
+	</div>
+</div>
+
+<div id="list-page" class="page">
+	<div class="list-container" id="dots-list-container">
+	</div>
+</div>
+
+<div id="settings-page" class="page">
+	<div class="list-container">
+		<h3>Map Settings</h3>
 		
-		let map;
-		let userLocation = null;
-		let markersOnMap = {}; // Maps dot ID to Leaflet Marker object
-		let selectedMarkerId = null;
+		<div style="margin-top: 15px; background: #333; padding: 15px; border-radius: 8px;">
+			<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Tile Style</label>
+			<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
+				<option value="osm">Standard (High Contrast / Colorful)</option>
+				<option value="terrain">Terrain (Topography/Outdoor)</option>
+				<option value="dark">Minimal Dark</option>
+				<option value="light">Minimal Light</option>
+			</select>
+
+			<div id="preview-map" style="height: 180px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000;"></div>
+			<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Preview of selected style</p>
+		</div>
+	</div>
+</div>
+	
+<div id="add-dot-modal" class="modal-overlay">
+	<div class="modal">
+		<h3 id="dot-modal-title">Add New Dot</h3>
+		<input type="hidden" id="edit-dot-id"> <p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
+		<select id="dot-category"></select>
+		<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
+		<div class="modal-actions">
+			<button class="btn" onclick="closeModal('add-dot-modal')">Cancel</button>
+			<button class="btn submit" onclick="saveDot()">Save</button>
+		</div>
+	</div>
+</div>
+
+<div id="cat-modal" class="modal-overlay">
+	<div class="modal">
+		<h3 id="cat-modal-title">Category</h3>
+		<input type="hidden" id="edit-cat-id">
+		<label style="font-size: 12px; color: var(--text-muted);">Name</label>
+		<input type="text" id="cat-name-input" placeholder="Category Name">
+		<label style="font-size: 12px; color: var(--text-muted);">Marker Color</label>
+		<input type="color" id="cat-color-input" value="#bb86fc" style="height: 40px; padding: 0;">
+		<div class="modal-actions">
+			<button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
+			<button class="btn submit" onclick="saveCategory()">Save</button>
+		</div>
+	</div>
+</div>
+
+<!--<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+-->
+
+<script src="js/leaflet.js"></script>
+
+
+<script>
+// --- State Management ---
+let previewMap;
+
+let map;
+let userLocation = null;
+let markersOnMap = {}; // Maps dot ID to Leaflet Marker object
+let selectedMarkerId = null;
+
+let allCategoriesActive = true;
+let activeCategories = new Set();
+let previousActiveCategories = new Set();
+
+let db;
+const DB_NAME = 'MapAppDB';
+const DB_VERSION = 1;
+
+// --- IndexedDB Initialization ---
+function initDB() {
+	return new Promise((resolve, reject) => {
+		const request = indexedDB.open(DB_NAME, DB_VERSION);
 		
-		let allCategoriesActive = true;
-		let activeCategories = new Set();
-		let previousActiveCategories = new Set();
-
-		let db;
-		const DB_NAME = 'MapAppDB';
-		const DB_VERSION = 1;
-
-		// --- IndexedDB Initialization ---
-		function initDB() {
-			return new Promise((resolve, reject) => {
-				const request = indexedDB.open(DB_NAME, DB_VERSION);
-				
-				request.onupgradeneeded = (event) => {
-					db = event.target.result;
-					if (!db.objectStoreNames.contains('categories')) {
-						const catStore = db.createObjectStore('categories', { keyPath: 'id' });
-						// Add defaults
-						catStore.add({ id: 'cat_' + Date.now(), name: 'Mushrooms', color: '#ff5555', order: 1 });
-						catStore.add({ id: 'cat_' + (Date.now()+1), name: 'Plants', color: '#55ff55', order: 2 });
-						catStore.add({ id: 'cat_' + (Date.now()+2), name: 'Animals', color: '#5555ff', order: 3 });
-					}
-					if (!db.objectStoreNames.contains('dots')) {
-						const dotStore = db.createObjectStore('dots', { keyPath: 'id', autoIncrement: true });
-						dotStore.createIndex('timestamp', 'timestamp', { unique: false });
-					}
-				};
-				
-				request.onsuccess = (event) => {
-					db = event.target.result;
-					resolve();
-				};
-				request.onerror = (event) => reject(event.target.error);
-			});
-		}
-
-		// DB Helpers
-		function getAll(storeName) {
-			return new Promise((resolve) => {
-				const tx = db.transaction(storeName, 'readonly');
-				const store = tx.objectStore(storeName);
-				const req = store.getAll();
-				req.onsuccess = () => resolve(req.result);
-			});
-		}
-		
-		function putDb(storeName, item) {
-			return new Promise((resolve) => {
-				const tx = db.transaction(storeName, 'readwrite');
-				tx.objectStore(storeName).put(item);
-				tx.oncomplete = () => resolve(item);
-			});
-		}
-
-		function deleteDb(storeName, id) {
-			return new Promise((resolve) => {
-				const tx = db.transaction(storeName, 'readwrite');
-				tx.objectStore(storeName).delete(id);
-				tx.oncomplete = () => resolve();
-			});
-		}
-
-		// --- UI Interactions ---
-		function toggleMenu() {
-			const sidebar = document.getElementById('sidebar');
-			sidebar.classList.toggle('open');
-		}
-
-		function switchPage(pageId) {
-			document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-			document.getElementById(pageId).classList.add('active');
-			toggleMenu();
-			
-			if (pageId === 'map-page') { 
-				map.invalidateSize(); 
+		request.onupgradeneeded = (event) => {
+			db = event.target.result;
+			if (!db.objectStoreNames.contains('categories')) {
+				const catStore = db.createObjectStore('categories', { keyPath: 'id' });
+				// Add defaults
+				catStore.add({ id: 'cat_' + Date.now(), name: 'Mushrooms', color: '#ff5555', order: 1 });
+				catStore.add({ id: 'cat_' + (Date.now()+1), name: 'Plants', color: '#55ff55', order: 2 });
+				catStore.add({ id: 'cat_' + (Date.now()+2), name: 'Animals', color: '#5555ff', order: 3 });
 			}
-			if (pageId === 'categories-page') { loadCategoriesPage(); }
-			if (pageId === 'list-page') { loadListPage(); }
-			if (pageId === 'settings-page') { initPreviewMap(); } // New call
-		}
-
-		function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-		function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-		// --- Categories Logic ---
-		async function loadCategories() {
-			const categories = await getAll('categories');
-			categories.sort((a, b) => a.order - b.order);
-			
-			// Build Top Bar
-			const scroller = document.getElementById('category-scroller');
-			scroller.innerHTML = `<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
-									<i class="fa fa-star"></i> All
-								  </button>`;
-			
-			categories.forEach(cat => {
-				if (allCategoriesActive) {
-					activeCategories.add(cat.id);
-				}
-				const isActive = activeCategories.has(cat.id);
-				const opacityStyle = (!allCategoriesActive && !isActive) ? 'opacity: 0.5;' : '';
-				const activeClass = isActive && !allCategoriesActive ? 'active' : '';
-
-				scroller.innerHTML += `
-					<button class="cat-toggle ${activeClass}" style="${opacityStyle}" onclick="toggleCategory('${cat.id}')" id="btn-${cat.id}">
-						<span class="color-dot" style="background-color: ${cat.color};"></span> ${cat.name}
-					</button>`;
-			});
-
-			// Populate Add Dot dropdown
-			const select = document.getElementById('dot-category');
-			select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-			
-			renderMapDots();
-		}
-
-		function toggleStar() {
-			allCategoriesActive = !allCategoriesActive;
-			if (allCategoriesActive) {
-				previousActiveCategories = new Set(activeCategories);
-			} else {
-				activeCategories = new Set(previousActiveCategories);
-			}
-			loadCategories();
-		}
-
-		async function toggleCategory(catId) {
-			if (allCategoriesActive) {
-				allCategoriesActive = false;
-				activeCategories.clear();
-			}
-			if (activeCategories.has(catId)) {
-				activeCategories.delete(catId);
-			} else {
-				activeCategories.add(catId);
-			}
-			previousActiveCategories = new Set(activeCategories);
-			loadCategories();
-		}
-
-		// --- Category Management Page ---
-		// --- Category Management Logic ---
-
-		async function loadCategoriesPage() {
-			const categories = await getAll('categories');
-			categories.sort((a, b) => a.order - b.order);
-			const list = document.getElementById('cat-manage-list');
-			
-			list.innerHTML = categories.map((cat) => `
-				<div class="cat-manage-item">
-					<div style="display:flex; align-items:center; gap:10px; flex-grow:1; cursor:pointer;" onclick="openEditCategoryModal('${cat.id}')">
-						<span class="color-dot" style="background-color: ${cat.color}; width:15px; height:15px; border-radius:50%; display:inline-block;"></span>
-						<span>${cat.name}</span>
-						<i class="fa fa-pencil" style="font-size: 12px; color: var(--text-muted); margin-left: 5px;"></i>
-					</div>
-					<div class="cat-manage-controls">
-						<button onclick="moveCategory('${cat.id}', -1)"><i class="fa fa-arrow-up"></i></button>
-						<button onclick="moveCategory('${cat.id}', 1)"><i class="fa fa-arrow-down"></i></button>
-						<button onclick="deleteCategory('${cat.id}', '${cat.name}')"><i class="fa fa-trash" style="color:var(--danger)"></i></button>
-					</div>
-				</div>
-			`).join('');
-		}
-
-		async function openEditCategoryModal(id) {
-			const categories = await getAll('categories');
-			const cat = categories.find(c => c.id === id);
-			if (!cat) return;
-
-			document.getElementById('cat-modal-title').innerText = "Edit Category";
-			document.getElementById('edit-cat-id').value = cat.id;
-			document.getElementById('cat-name-input').value = cat.name;
-			document.getElementById('cat-color-input').value = cat.color;
-			openModal('cat-modal');
-		}
-
-		function openAddCategoryModal() {
-			document.getElementById('cat-modal-title').innerText = "Add Category";
-			document.getElementById('edit-cat-id').value = ''; // Empty means "New"
-			document.getElementById('cat-name-input').value = '';
-			document.getElementById('cat-color-input').value = '#bb86fc';
-			openModal('cat-modal');
-		}
-
-		async function saveCategory() {
-			const id = document.getElementById('edit-cat-id').value;
-			const name = document.getElementById('cat-name-input').value.trim();
-			const color = document.getElementById('cat-color-input').value;
-			
-			if (!name) return alert("Please enter a name");
-
-			const categories = await getAll('categories');
-
-			if (id) {
-				// EDIT EXISTING
-				const cat = categories.find(c => c.id === id);
-				cat.name = name;
-				cat.color = color;
-				await putDb('categories', cat);
-			} else {
-				// ADD NEW
-				const newCat = {
-					id: 'cat_' + Date.now(),
-					name: name,
-					color: color,
-					order: categories.length + 1
-				};
-				await putDb('categories', newCat);
-			}
-
-			closeModal('cat-modal');
-			loadCategories(); // Refresh top bar
-			loadCategoriesPage(); // Refresh list
-			
-			// Refresh map dots to show new colors/names
-			if (map) renderMapDots(); 
-		}
-
-		async function moveCategory(id, direction) {
-			let cats = await getAll('categories');
-			cats.sort((a, b) => a.order - b.order);
-			const index = cats.findIndex(c => c.id === id);
-			if (index < 0 || index + direction < 0 || index + direction >= cats.length) return;
-			
-			// Swap orders
-			let temp = cats[index].order;
-			cats[index].order = cats[index + direction].order;
-			cats[index + direction].order = temp;
-			
-			await putDb('categories', cats[index]);
-			await putDb('categories', cats[index + direction]);
-			loadCategoriesPage();
-			loadCategories();
-		}
-
-		async function deleteCategory(id, name) {
-			if (confirm(`Delete category "${name}"? ALL dots in this category will be removed permanently.`)) {
-				await deleteDb('categories', id);
-				// Cascading delete for dots
-				const dots = await getAll('dots');
-				for (let dot of dots) {
-					if (dot.categoryId === id) {
-						await deleteDb('dots', dot.id);
-					}
-				}
-				activeCategories.delete(id);
-				previousActiveCategories.delete(id);
-				loadCategoriesPage();
-				loadCategories();
-				if(document.getElementById('map-page').classList.contains('active')) renderMapDots();
-			}
-		}
-
-		// --- List Page ---
-		async function loadListPage() {
-			const dots = await getAll('dots');
-			const categories = await getAll('categories');
-			const catMap = {};
-			categories.forEach(c => catMap[c.id] = c);
-
-			// Sort newest first
-			dots.sort((a, b) => b.timestamp - a.timestamp);
-
-			const container = document.getElementById('dots-list-container');
-			if (dots.length === 0) {
-				container.innerHTML = "<p style='color: var(--text-muted)'>No dots placed yet.</p>";
-				return;
-			}
-
-			container.innerHTML = dots.map(dot => {
-				const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
-				const dateStr = new Date(dot.timestamp).toLocaleString(); // Localized format
-				return `
-					<div class="list-item" onclick="focusDotFromList(${dot.id}, '${dot.categoryId}')">
-						<div class="list-item-content">
-							<h4 style="color: ${cat.color};">${cat.name}</h4>
-							<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || 'No comment'}</p>
-							<span class="list-item-date">${dateStr}</span>
-						</div>
-						<i class="fa fa-chevron-right" style="color: var(--text-muted)"></i>
-					</div>
-				`;
-			}).join('');
-		}
-
-		function focusDotFromList(dotId, catId) {
-			// Enable category if it's not active
-			if (!allCategoriesActive && !activeCategories.has(catId)) {
-				activeCategories.add(catId);
-				previousActiveCategories.add(catId);
-				loadCategories();
-			}
-			
-			// Switch to map
-			switchPage('map-page');
-			
-			// Wait slightly for map size invalidation
-			setTimeout(async () => {
-				const marker = markersOnMap[dotId];
-				if (marker) {
-					map.setView(marker.getLatLng(), 18);
-					selectMarker(dotId);
-				}
-			}, 300);
-		}
-		
-		// --- Map Styles Configuration ---
-		const MAP_STYLES = {
-			'osm': {
-				url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-				attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			},
-			'terrain': {
-				url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-				attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap'
-			},
-			'dark': {
-				url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-				attr: '&copy; OpenStreetMap &copy; CARTO'
-			},
-			'light': {
-				url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-				attr: '&copy; OpenStreetMap &copy; CARTO'
+			if (!db.objectStoreNames.contains('dots')) {
+				const dotStore = db.createObjectStore('dots', { keyPath: 'id', autoIncrement: true });
+				dotStore.createIndex('timestamp', 'timestamp', { unique: false });
 			}
 		};
-
-		function initMap() {
-			// 1. Determine the starting style (Default to 'osm')
-			const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-			
-			// Set the dropdown to match the saved style
-			document.getElementById('map-style-select').value = savedStyle;
-
-			// 2. Initialize the map
-			map = L.map('map', { zoomControl: false }).setView([60.2, 24.9], 13);
-			
-			// 3. Apply the preferred tile layer
-			const config = MAP_STYLES[savedStyle];
-			L.tileLayer(config.url, {
-				maxZoom: 19,
-				attribution: config.attr
-			}).addTo(map);
-
-			// Click empty map to deselect
-			map.on('click', () => { deselectCurrentMarker(); });
-
-			// Initial GPS focus
-			recenterMap();
-		}
-
-		function initPreviewMap() {
-			const style = localStorage.getItem('preferredMapStyle') || 'osm';
-			
-			// Initialize preview map if it doesn't exist
-			if (!previewMap) {
-				previewMap = L.map('preview-map', { 
-					zoomControl: false,
-					attributionControl: false, // Keep it clean for the preview
-					dragging: false,
-					touchZoom: false,
-					scrollWheelZoom: false,
-					doubleClickZoom: false
-				}).setView([60.1699, 24.9384], 12); // Sample location (Helsinki)
-			}
-
-			// Refresh size in case container was hidden
-			setTimeout(() => { previewMap.invalidateSize(); }, 100);
-			
-			updateTiles(previewMap, style);
-		}
-
-		function updateTiles(targetMap, style) {
-			// Remove existing tile layers from the target map
-			targetMap.eachLayer((layer) => {
-				if (layer instanceof L.TileLayer) {
-					targetMap.removeLayer(layer);
-				}
-			});
-
-			const config = MAP_STYLES[style];
-			L.tileLayer(config.url, {
-				maxZoom: 19,
-				attribution: config.attr
-			}).addTo(targetMap);
-		}
-
-		function changeMapStyle(style) {
-			localStorage.setItem('preferredMapStyle', style);
-			
-			// Update both the main map and the preview map
-			updateTiles(map, style);
-			if (previewMap) {
-				updateTiles(previewMap, style);
-			}
-		}
-
-		function recenterMap() {
-			if ("geolocation" in navigator) {
-				navigator.geolocation.getCurrentPosition(pos => {
-					userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-					map.setView([userLocation.lat, userLocation.lng], 16);
-				}, err => {
-					alert("Unable to retrieve your location. Check permissions.");
-				}, { enableHighAccuracy: true });
-			} else {
-				alert("Geolocation is not supported by your browser");
-			}
-		}
-
-		// --- Marker Management ---
-		async function renderMapDots() {
-			// Clear existing
-			for (let id in markersOnMap) {
-				map.removeLayer(markersOnMap[id]);
-			}
-			markersOnMap = {};
-			selectedMarkerId = null;
-
-			const dots = await getAll('dots');
-			const categories = await getAll('categories');
-			const catMap = {};
-			categories.forEach(c => catMap[c.id] = c);
-
-			dots.forEach(dot => {
-				// Filter logic
-				if (!allCategoriesActive && !activeCategories.has(dot.categoryId)) return;
-
-				const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
-				
-				const iconHtml = `<div class="custom-marker" style="background-color: ${cat.color}; width: 20px; height: 20px;"></div>`;
-				const customIcon = L.divIcon({
-					className: '', html: iconHtml, iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10]
-				});
-
-				const marker = L.marker([dot.lat, dot.lng], {
-					icon: customIcon,
-					draggable: false 
-				}).addTo(map);
-
-				// Store reference
-				marker.dotData = dot;
-				marker.catData = cat;
-				markersOnMap[dot.id] = marker;
-
-				// Click events
-				marker.on('click', (e) => {
-					L.DomEvent.stopPropagation(e);
-					if (selectedMarkerId === dot.id) {
-						// Already selected, open popup
-						openDotPopup(dot.id);
-					} else {
-						// Select it
-						selectMarker(dot.id);
-					}
-				});
-
-				// Drag end event to update GPS location
-				marker.on('dragend', async (e) => {
-					const newPos = marker.getLatLng();
-					dot.lat = newPos.lat;
-					dot.lng = newPos.lng;
-					await putDb('dots', dot); // update DB
-				});
-			});
-		}
-
-		function deselectCurrentMarker() {
-			if (selectedMarkerId && markersOnMap[selectedMarkerId]) {
-				const marker = markersOnMap[selectedMarkerId];
-				marker.dragging.disable();
-				const el = marker.getElement().querySelector('.custom-marker');
-				if(el) el.classList.remove('selected');
-				marker.closePopup();
-			}
-			selectedMarkerId = null;
-		}
-
-		function selectMarker(id) {
-			deselectCurrentMarker();
-			selectedMarkerId = id;
-			const marker = markersOnMap[id];
-			marker.dragging.enable();
-			
-			const el = marker.getElement().querySelector('.custom-marker');
-			if(el) el.classList.add('selected');
-		}
-
-		function openDotPopup(id) {
-			const marker = markersOnMap[id];
-			const dot = marker.dotData;
-			const cat = marker.catData;
-			const dateStr = new Date(dot.timestamp).toLocaleString();
-			const coordsStr = `${dot.lat.toFixed(6)}, ${dot.lng.toFixed(6)}`;
-
-			const popupContent = `
-				<div id="popup-${dot.id}">
-					<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
-					<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
-					<p style="margin: 10px 0;">${dot.comment || '<i>No comment</i>'}</p>
-					<p style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);">${coordsStr}</p>
-					<div style="margin-top:15px; display:flex; justify-content:space-between;">
-						<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
-						<button class="btn submit" onclick="openEditDotModal(${dot.id})" style="padding: 5px 15px; font-size:12px;">Edit</button>
-					</div>
-				</div>
-			`;
-			
-			marker.bindPopup(popupContent).openPopup();
-		}
-
-		async function deleteDot(id) {
-			if (confirm("Delete this dot permanently?")) {
-				await deleteDb('dots', id);
-				renderMapDots();
-			}
-		}
-
-		// --- Adding Dots ---
-		let pendingLocation = null;
-	
-		// Update your floating "+" button to clear the ID so it's fresh for a "New" dot
-		function openAddDotModal() {
-			document.getElementById('dot-modal-title').innerText = "Add New Dot";
-			document.getElementById('edit-dot-id').value = ''; 
-			document.getElementById('dot-comment').value = '';
-			document.getElementById('gps-status').innerText = "Acquiring current location...";
-			openModal('add-dot-modal');
-
-			if ("geolocation" in navigator) {
-				navigator.geolocation.getCurrentPosition(pos => {
-					pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-					document.getElementById('gps-status').innerText = "Location acquired (Accuracy: " + Math.round(pos.coords.accuracy) + "m)";
-				}, err => {
-					document.getElementById('gps-status').innerText = "Using map center.";
-					const center = map.getCenter();
-					pendingLocation = { lat: center.lat, lng: center.lng };
-				}, { enableHighAccuracy: true });
-			}
-		}
-
-		async function openEditDotModal(id) {
-			const marker = markersOnMap[id];
-			const dot = marker.dotData;
-
-			// Set modal to Edit mode
-			document.getElementById('dot-modal-title').innerText = "Edit Dot Info";
-			document.getElementById('edit-dot-id').value = id;
-			document.getElementById('dot-category').value = dot.categoryId;
-			document.getElementById('dot-comment').value = dot.comment || '';
-			document.getElementById('gps-status').innerText = "Updating existing location data";
-			
-			// We don't want to overwrite the GPS with current location when editing,
-			// so we set pendingLocation to the dot's current position.
-			pendingLocation = { lat: dot.lat, lng: dot.lng };
-
-			openModal('add-dot-modal');
-		}
-
-		async function saveDot() {
-			const editId = document.getElementById('edit-dot-id').value;
-			const catId = document.getElementById('dot-category').value;
-			const comment = document.getElementById('dot-comment').value.trim();
-			
-			if (!pendingLocation) {
-				alert("Still waiting for location...");
-				return;
-			}
-
-			if (editId) {
-				// --- EDITING EXISTING DOT ---
-				const dots = await getAll('dots');
-				// IDs in IndexedDB can be numbers, so we parse it
-				const dot = dots.find(d => d.id == editId); 
-				if (dot) {
-					dot.categoryId = catId;
-					dot.comment = comment;
-					// Note: lat/lng are updated via dragging, we don't change them here 
-					// unless you explicitly want to move it to your current GPS.
-					await putDb('dots', dot);
-				}
-			} else {
-				// --- ADDING NEW DOT ---
-				const newDot = {
-					categoryId: catId,
-					comment: comment,
-					lat: pendingLocation.lat,
-					lng: pendingLocation.lng,
-					timestamp: Date.now()
-				};
-				await putDb('dots', newDot);
-				map.setView([pendingLocation.lat, pendingLocation.lng], 18);
-			}
-
-			closeModal('add-dot-modal');
-			renderMapDots(); // Refresh map
-		}
 		
-		// --- Bootstrapping ---
-		window.onload = async () => {
-			await initDB();
-			initMap();
-			await loadCategories();
+		request.onsuccess = (event) => {
+			db = event.target.result;
+			resolve();
 		};
+		request.onerror = (event) => reject(event.target.error);
+	});
+}
 
-	</script>
+// DB Helpers
+function getAll(storeName) {
+	return new Promise((resolve) => {
+		const tx = db.transaction(storeName, 'readonly');
+		const store = tx.objectStore(storeName);
+		const req = store.getAll();
+		req.onsuccess = () => resolve(req.result);
+	});
+}
+
+function putDb(storeName, item) {
+	return new Promise((resolve) => {
+		const tx = db.transaction(storeName, 'readwrite');
+		tx.objectStore(storeName).put(item);
+		tx.oncomplete = () => resolve(item);
+	});
+}
+
+function deleteDb(storeName, id) {
+	return new Promise((resolve) => {
+		const tx = db.transaction(storeName, 'readwrite');
+		tx.objectStore(storeName).delete(id);
+		tx.oncomplete = () => resolve();
+	});
+}
+
+// --- UI Interactions ---
+function toggleMenu() {
+	const sidebar = document.getElementById('sidebar');
+	sidebar.classList.toggle('open');
+}
+
+function switchPage(pageId) {
+	document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+	document.getElementById(pageId).classList.add('active');
+	toggleMenu();
+	
+	if (pageId === 'map-page') { 
+		map.invalidateSize(); 
+	}
+	if (pageId === 'categories-page') { loadCategoriesPage(); }
+	if (pageId === 'list-page') { loadListPage(); }
+	if (pageId === 'settings-page') { initPreviewMap(); } // New call
+}
+
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+// --- Categories Logic ---
+async function loadCategories() {
+	const categories = await getAll('categories');
+	categories.sort((a, b) => a.order - b.order);
+	
+	// Build Top Bar
+	const scroller = document.getElementById('category-scroller');
+	scroller.innerHTML = `<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
+							<i class="fa-solid fa-star"></i> All
+						  </button>`;
+	
+	categories.forEach(cat => {
+		if (allCategoriesActive) {
+			activeCategories.add(cat.id);
+		}
+		const isActive = activeCategories.has(cat.id);
+		const opacityStyle = (!allCategoriesActive && !isActive) ? 'opacity: 0.5;' : '';
+		const activeClass = isActive && !allCategoriesActive ? 'active' : '';
+
+		scroller.innerHTML += `
+			<button class="cat-toggle ${activeClass}" style="${opacityStyle}" onclick="toggleCategory('${cat.id}')" id="btn-${cat.id}">
+				<span class="color-dot" style="background-color: ${cat.color};"></span> ${cat.name}
+			</button>`;
+	});
+
+	// Populate Add Dot dropdown
+	const select = document.getElementById('dot-category');
+	select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+	
+	renderMapDots();
+}
+
+function toggleStar() {
+	allCategoriesActive = !allCategoriesActive;
+	if (allCategoriesActive) {
+		previousActiveCategories = new Set(activeCategories);
+	} else {
+		activeCategories = new Set(previousActiveCategories);
+	}
+	loadCategories();
+}
+
+async function toggleCategory(catId) {
+	if (allCategoriesActive) {
+		allCategoriesActive = false;
+		activeCategories.clear();
+	}
+	if (activeCategories.has(catId)) {
+		activeCategories.delete(catId);
+	} else {
+		activeCategories.add(catId);
+	}
+	previousActiveCategories = new Set(activeCategories);
+	loadCategories();
+}
+
+// --- Category Management Page ---
+// --- Category Management Logic ---
+
+async function loadCategoriesPage() {
+	const categories = await getAll('categories');
+	categories.sort((a, b) => a.order - b.order);
+	const list = document.getElementById('cat-manage-list');
+	
+	list.innerHTML = categories.map((cat) => `
+		<div class="cat-manage-item">
+			<div style="display:flex; align-items:center; gap:10px; flex-grow:1; cursor:pointer;" onclick="openEditCategoryModal('${cat.id}')">
+				<span class="color-dot" style="background-color: ${cat.color}; width:15px; height:15px; border-radius:50%; display:inline-block;"></span>
+				<span>${cat.name}</span>
+				<i class="fa-solid fa-pencil" style="font-size: 12px; color: var(--text-muted); margin-left: 5px;"></i>
+			</div>
+			<div class="cat-manage-controls">
+				<button onclick="moveCategory('${cat.id}', -1)"><i class="fa-solid fa-arrow-up"></i></button>
+				<button onclick="moveCategory('${cat.id}', 1)"><i class="fa-solid fa-arrow-down"></i></button>
+				<button onclick="deleteCategory('${cat.id}', '${cat.name}')"><i class="fa-solid fa-trash" style="color:var(--danger)"></i></button>
+			</div>
+		</div>
+	`).join('');
+}
+
+async function openEditCategoryModal(id) {
+	const categories = await getAll('categories');
+	const cat = categories.find(c => c.id === id);
+	if (!cat) return;
+
+	document.getElementById('cat-modal-title').innerText = "Edit Category";
+	document.getElementById('edit-cat-id').value = cat.id;
+	document.getElementById('cat-name-input').value = cat.name;
+	document.getElementById('cat-color-input').value = cat.color;
+	openModal('cat-modal');
+}
+
+function openAddCategoryModal() {
+	document.getElementById('cat-modal-title').innerText = "Add Category";
+	document.getElementById('edit-cat-id').value = ''; // Empty means "New"
+	document.getElementById('cat-name-input').value = '';
+	document.getElementById('cat-color-input').value = '#bb86fc';
+	openModal('cat-modal');
+}
+
+async function saveCategory() {
+	const id = document.getElementById('edit-cat-id').value;
+	const name = document.getElementById('cat-name-input').value.trim();
+	const color = document.getElementById('cat-color-input').value;
+	
+	if (!name) return alert("Please enter a name");
+
+	const categories = await getAll('categories');
+
+	if (id) {
+		// EDIT EXISTING
+		const cat = categories.find(c => c.id === id);
+		cat.name = name;
+		cat.color = color;
+		await putDb('categories', cat);
+	} else {
+		// ADD NEW
+		const newCat = {
+			id: 'cat_' + Date.now(),
+			name: name,
+			color: color,
+			order: categories.length + 1
+		};
+		await putDb('categories', newCat);
+	}
+
+	closeModal('cat-modal');
+	loadCategories(); // Refresh top bar
+	loadCategoriesPage(); // Refresh list
+	
+	// Refresh map dots to show new colors/names
+	if (map) renderMapDots(); 
+}
+
+async function moveCategory(id, direction) {
+	let cats = await getAll('categories');
+	cats.sort((a, b) => a.order - b.order);
+	const index = cats.findIndex(c => c.id === id);
+	if (index < 0 || index + direction < 0 || index + direction >= cats.length) return;
+	
+	// Swap orders
+	let temp = cats[index].order;
+	cats[index].order = cats[index + direction].order;
+	cats[index + direction].order = temp;
+	
+	await putDb('categories', cats[index]);
+	await putDb('categories', cats[index + direction]);
+	loadCategoriesPage();
+	loadCategories();
+}
+
+async function deleteCategory(id, name) {
+	if (confirm(`Delete category "${name}"? ALL dots in this category will be removed permanently.`)) {
+		await deleteDb('categories', id);
+		// Cascading delete for dots
+		const dots = await getAll('dots');
+		for (let dot of dots) {
+			if (dot.categoryId === id) {
+				await deleteDb('dots', dot.id);
+			}
+		}
+		activeCategories.delete(id);
+		previousActiveCategories.delete(id);
+		loadCategoriesPage();
+		loadCategories();
+		if(document.getElementById('map-page').classList.contains('active')) renderMapDots();
+	}
+}
+
+// --- List Page ---
+async function loadListPage() {
+	const dots = await getAll('dots');
+	const categories = await getAll('categories');
+	const catMap = {};
+	categories.forEach(c => catMap[c.id] = c);
+
+	// Sort newest first
+	dots.sort((a, b) => b.timestamp - a.timestamp);
+
+	const container = document.getElementById('dots-list-container');
+	if (dots.length === 0) {
+		container.innerHTML = "<p style='color: var(--text-muted)'>No dots placed yet.</p>";
+		return;
+	}
+
+	container.innerHTML = dots.map(dot => {
+		const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
+		const dateStr = new Date(dot.timestamp).toLocaleString(); // Localized format
+		return `
+			<div class="list-item" onclick="focusDotFromList(${dot.id}, '${dot.categoryId}')">
+				<div class="list-item-content">
+					<h4 style="color: ${cat.color};">${cat.name}</h4>
+					<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || 'No comment'}</p>
+					<span class="list-item-date">${dateStr}</span>
+				</div>
+				<i class="fa-solid fa-chevron-right" style="color: var(--text-muted)"></i>
+			</div>
+		`;
+	}).join('');
+}
+
+function focusDotFromList(dotId, catId) {
+	// Enable category if it's not active
+	if (!allCategoriesActive && !activeCategories.has(catId)) {
+		activeCategories.add(catId);
+		previousActiveCategories.add(catId);
+		loadCategories();
+	}
+	
+	// Switch to map
+	switchPage('map-page');
+	
+	// Wait slightly for map size invalidation
+	setTimeout(async () => {
+		const marker = markersOnMap[dotId];
+		if (marker) {
+			map.setView(marker.getLatLng(), 18);
+			selectMarker(dotId);
+		}
+	}, 300);
+}
+
+// --- Map Styles Configuration ---
+const MAP_STYLES = {
+	'osm': {
+		url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+		attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+	},
+	'terrain': {
+		url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+		attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap'
+	},
+	'dark': {
+		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+		attr: '&copy; OpenStreetMap &copy; CARTO'
+	},
+	'light': {
+		url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+		attr: '&copy; OpenStreetMap &copy; CARTO'
+	}
+};
+
+function initMap() {
+	// 1. Determine the starting style (Default to 'osm')
+	const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+	
+	// Set the dropdown to match the saved style
+	document.getElementById('map-style-select').value = savedStyle;
+
+	// 2. Initialize the map
+	map = L.map('map', { zoomControl: false }).setView([60.2, 24.9], 13);
+	
+	// 3. Apply the preferred tile layer
+	const config = MAP_STYLES[savedStyle];
+	L.tileLayer(config.url, {
+		maxZoom: 19,
+		attribution: config.attr
+	}).addTo(map);
+
+	// Click empty map to deselect
+	map.on('click', () => { deselectCurrentMarker(); });
+
+	// Initial GPS focus
+	recenterMap();
+}
+
+function initPreviewMap() {
+	const style = localStorage.getItem('preferredMapStyle') || 'osm';
+	
+	// Initialize preview map if it doesn't exist
+	if (!previewMap) {
+		previewMap = L.map('preview-map', { 
+			zoomControl: false,
+			attributionControl: false, // Keep it clean for the preview
+			dragging: false,
+			touchZoom: false,
+			scrollWheelZoom: false,
+			doubleClickZoom: false
+		}).setView([60.1699, 24.9384], 12); // Sample location (Helsinki)
+	}
+
+	// Refresh size in case container was hidden
+	setTimeout(() => { previewMap.invalidateSize(); }, 100);
+	
+	updateTiles(previewMap, style);
+}
+
+function updateTiles(targetMap, style) {
+	// Remove existing tile layers from the target map
+	targetMap.eachLayer((layer) => {
+		if (layer instanceof L.TileLayer) {
+			targetMap.removeLayer(layer);
+		}
+	});
+
+	const config = MAP_STYLES[style];
+	L.tileLayer(config.url, {
+		maxZoom: 19,
+		attribution: config.attr
+	}).addTo(targetMap);
+}
+
+function changeMapStyle(style) {
+	localStorage.setItem('preferredMapStyle', style);
+	
+	// Update both the main map and the preview map
+	updateTiles(map, style);
+	if (previewMap) {
+		updateTiles(previewMap, style);
+	}
+}
+
+function recenterMap() {
+	if ("geolocation" in navigator) {
+		navigator.geolocation.getCurrentPosition(pos => {
+			userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+			map.setView([userLocation.lat, userLocation.lng], 16);
+		}, err => {
+			alert("Unable to retrieve your location. Check permissions.");
+		}, { enableHighAccuracy: true });
+	} else {
+		alert("Geolocation is not supported by your browser");
+	}
+}
+
+// --- Marker Management ---
+async function renderMapDots() {
+	// Clear existing
+	for (let id in markersOnMap) {
+		map.removeLayer(markersOnMap[id]);
+	}
+	markersOnMap = {};
+	selectedMarkerId = null;
+
+	const dots = await getAll('dots');
+	const categories = await getAll('categories');
+	const catMap = {};
+	categories.forEach(c => catMap[c.id] = c);
+
+	dots.forEach(dot => {
+		// Filter logic
+		if (!allCategoriesActive && !activeCategories.has(dot.categoryId)) return;
+
+		const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
+		
+		const iconHtml = `<div class="custom-marker" style="background-color: ${cat.color}; width: 20px; height: 20px;"></div>`;
+		const customIcon = L.divIcon({
+			className: '', html: iconHtml, iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10]
+		});
+
+		const marker = L.marker([dot.lat, dot.lng], {
+			icon: customIcon,
+			draggable: false 
+		}).addTo(map);
+
+		// Store reference
+		marker.dotData = dot;
+		marker.catData = cat;
+		markersOnMap[dot.id] = marker;
+
+		// Click events
+		marker.on('click', (e) => {
+			L.DomEvent.stopPropagation(e);
+			if (selectedMarkerId === dot.id) {
+				// Already selected, open popup
+				openDotPopup(dot.id);
+			} else {
+				// Select it
+				selectMarker(dot.id);
+			}
+		});
+
+		// Drag end event to update GPS location
+		marker.on('dragend', async (e) => {
+			const newPos = marker.getLatLng();
+			dot.lat = newPos.lat;
+			dot.lng = newPos.lng;
+			await putDb('dots', dot); // update DB
+		});
+	});
+}
+
+function deselectCurrentMarker() {
+	if (selectedMarkerId && markersOnMap[selectedMarkerId]) {
+		const marker = markersOnMap[selectedMarkerId];
+		marker.dragging.disable();
+		const el = marker.getElement().querySelector('.custom-marker');
+		if(el) el.classList.remove('selected');
+		marker.closePopup();
+	}
+	selectedMarkerId = null;
+}
+
+function selectMarker(id) {
+	deselectCurrentMarker();
+	selectedMarkerId = id;
+	const marker = markersOnMap[id];
+	marker.dragging.enable();
+	
+	const el = marker.getElement().querySelector('.custom-marker');
+	if(el) el.classList.add('selected');
+}
+
+function openDotPopup(id) {
+	const marker = markersOnMap[id];
+	const dot = marker.dotData;
+	const cat = marker.catData;
+	const dateStr = new Date(dot.timestamp).toLocaleString();
+	const coordsStr = `${dot.lat.toFixed(6)}, ${dot.lng.toFixed(6)}`;
+
+	const popupContent = `
+		<div id="popup-${dot.id}">
+			<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
+			<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
+			<p style="margin: 10px 0;">${dot.comment || '<i>No comment</i>'}</p>
+			<p style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);">${coordsStr}</p>
+			<div style="margin-top:15px; display:flex; justify-content:space-between;">
+				<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
+				<button class="btn submit" onclick="openEditDotModal(${dot.id})" style="padding: 5px 15px; font-size:12px;">Edit</button>
+			</div>
+		</div>
+	`;
+	
+	marker.bindPopup(popupContent).openPopup();
+}
+
+async function deleteDot(id) {
+	if (confirm("Delete this dot permanently?")) {
+		await deleteDb('dots', id);
+		renderMapDots();
+	}
+}
+
+// --- Adding Dots ---
+let pendingLocation = null;
+
+// Update your floating "+" button to clear the ID so it's fresh for a "New" dot
+function openAddDotModal() {
+    // 1. Reset Modal Fields
+    document.getElementById('dot-modal-title').innerText = "Add New Dot";
+    document.getElementById('edit-dot-id').value = ''; 
+    document.getElementById('dot-comment').value = '';
+    
+    // 2. Get the current center of the map view
+    const center = map.getCenter();
+    pendingLocation = { lat: center.lat, lng: center.lng };
+
+    // 3. Update status text
+    document.getElementById('gps-status').innerText = `Placing at map center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
+    
+    openModal('add-dot-modal');
+}
+
+function openAddDotModal2() {
+	document.getElementById('dot-modal-title').innerText = "Add New Dot";
+	document.getElementById('edit-dot-id').value = ''; 
+	document.getElementById('dot-comment').value = '';
+	document.getElementById('gps-status').innerText = "Acquiring current location...";
+	openModal('add-dot-modal');
+
+	if ("geolocation" in navigator) {
+		navigator.geolocation.getCurrentPosition(pos => {
+			pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+			document.getElementById('gps-status').innerText = "Location acquired (Accuracy: " + Math.round(pos.coords.accuracy) + "m)";
+		}, err => {
+			document.getElementById('gps-status').innerText = "Using map center.";
+			const center = map.getCenter();
+			pendingLocation = { lat: center.lat, lng: center.lng };
+		}, { enableHighAccuracy: true });
+	}
+}
+
+
+
+async function openEditDotModal(id) {
+	const marker = markersOnMap[id];
+	const dot = marker.dotData;
+
+	// Set modal to Edit mode
+	document.getElementById('dot-modal-title').innerText = "Edit Dot Info";
+	document.getElementById('edit-dot-id').value = id;
+	document.getElementById('dot-category').value = dot.categoryId;
+	document.getElementById('dot-comment').value = dot.comment || '';
+	document.getElementById('gps-status').innerText = "Updating existing location data";
+	
+	// We don't want to overwrite the GPS with current location when editing,
+	// so we set pendingLocation to the dot's current position.
+	pendingLocation = { lat: dot.lat, lng: dot.lng };
+
+	openModal('add-dot-modal');
+}
+
+async function saveDot() {
+	const editId = document.getElementById('edit-dot-id').value;
+	const catId = document.getElementById('dot-category').value;
+	const comment = document.getElementById('dot-comment').value.trim();
+	
+	if (!pendingLocation) {
+		alert("Still waiting for location...");
+		return;
+	}
+
+	if (editId) {
+		// --- EDITING EXISTING DOT ---
+		const dots = await getAll('dots');
+		// IDs in IndexedDB can be numbers, so we parse it
+		const dot = dots.find(d => d.id == editId); 
+		if (dot) {
+			dot.categoryId = catId;
+			dot.comment = comment;
+			// Note: lat/lng are updated via dragging, we don't change them here 
+			// unless you explicitly want to move it to your current GPS.
+			await putDb('dots', dot);
+		}
+	} else {
+		// --- ADDING NEW DOT ---
+		const newDot = {
+			categoryId: catId,
+			comment: comment,
+			lat: pendingLocation.lat,
+			lng: pendingLocation.lng,
+			timestamp: Date.now()
+		};
+		await putDb('dots', newDot);
+		map.setView([pendingLocation.lat, pendingLocation.lng], 18);
+	}
+
+	closeModal('add-dot-modal');
+	renderMapDots(); // Refresh map
+}
+
+// --- Bootstrapping ---
+window.onload = async () => {
+	await initDB();
+	initMap();
+	await loadCategories();
+};
+
+</script>
+
+
 </body>
 </html>
