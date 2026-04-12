@@ -209,6 +209,29 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	font-weight:bold;
 }
 
+
+#compass-container {
+    position: absolute;
+    top: 10px; /* Säädä niin ettei peitä valikkoa */
+    right: 15px;
+    z-index: 1000;
+    background: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#compass-container i {
+    font-size: 24px;
+    color: #f44336; /* Punainen "neula" */
+}
+
 </style>
 
 </head>
@@ -235,6 +258,10 @@ path.leaflet-interactive[stroke="#2196F3"] {
 <div id="map-page" class="page active">
 	<div id="map"></div>
 	
+	<div id="compass-container" onclick="resetRotation()" style="display: none;">
+		<i class="fa-solid fa-compass"></i>
+	</div>
+
 	<div class="map-crosshair"></div>
 	
 	<div class="floating-controls">
@@ -308,6 +335,8 @@ path.leaflet-interactive[stroke="#2196F3"] {
 -->
 
 <script src="js/leaflet.js"></script>
+
+<script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 
 
 <script>
@@ -666,7 +695,13 @@ function initMap() {
 	document.getElementById('map-style-select').value = savedStyle;
 
 	// 2. Initialize the map with the saved view
-	map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
+	map = new L.Map('map', { 
+	    rotate: true,
+		touchRotate: true,
+		zoomControl: false,
+	}).setView([savedLat, savedLng], savedZoom);
+	
+
 	
 	// 3. Apply the tile layer
 	const config = MAP_STYLES[savedStyle];
@@ -726,6 +761,30 @@ function initMap() {
 	map.on('locationerror', (e) => {
 		console.warn("GPS access denied or signal lost.");
 	});
+	
+	const compass = document.getElementById('compass-container');
+
+	map.on('rotate', () => {
+		const angle = map.getBearing(); // Hakee kartan kulman asteina
+		
+		// Jos kartta on melkein suorassa, piilotetaan kompassi
+		if (Math.abs(angle) < 0.1) {
+			compass.style.display = 'none';
+		} else {
+			compass.style.display = 'flex';
+			// Pyöritetään ikonia vastakkaiseen suuntaan
+			compass.style.transform = `rotate(${-angle}deg)`;
+		}
+	});
+
+
+	
+	map.setBearing(90);
+}
+
+// Funktio kartan palauttamiseen pohjoiseen
+function resetRotation() {
+	map.setBearing(0); // Kääntää kartan takaisin nollaan
 }
 
 function initPreviewMap() {
