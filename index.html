@@ -257,6 +257,8 @@ path.leaflet-interactive[stroke="#2196F3"] {
 			<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
 				<option value="osm">Standard (High Contrast / Colorful)</option>
 				<option value="terrain">Terrain (Topography/Outdoor)</option>
+				<option value="mml_maasto">Suomen Maastokartta (MML)</option>
+				<option value="mml_vapaa">Suomen Maastokartta (Kapsi.fi)</option>
 				<option value="dark">Minimal Dark</option>
 				<option value="light">Minimal Light</option>
 			</select>
@@ -269,7 +271,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	
 <div id="add-dot-modal" class="modal-overlay">
 	<div class="modal">
-		<h3 id="dot-modal-title">Add New Dot</h3>
+		<h3 id="dot-modal-title">Lisää piste</h3>
 		<input type="hidden" id="edit-dot-id"> <p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
 		<select id="dot-category"></select>
 		<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
@@ -630,6 +632,17 @@ const MAP_STYLES = {
 		attr: 'Map data: &copy; OSM, SRTM | Style: &copy; OpenTopoMap',
 		maxNativeZoom: 17,
 	},
+	'mml_maasto': {
+        // Kartat.hylly.org tarjoama MML-maastokartta
+        url: 'https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png?api-key=391b8651-aa49-4300-81cc-f506e6e0e077',
+        attr: '&copy; Maanmittauslaitos',
+        maxNativeZoom: 18,
+    },
+	'mml_vapaa': {
+        url: 'https://tiles.kartat.kapsi.fi/maastokartta/{z}/{x}/{y}.jpg',
+        attr: '&copy; Maanmittauslaitos / Kapsi.fi',
+        maxNative: 18,
+    },
 	'dark': {
 		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
 		attr: '&copy; OpenStreetMap &copy; CARTO',
@@ -893,7 +906,7 @@ let pendingLocation = null;
 // Update your floating "+" button to clear the ID so it's fresh for a "New" dot
 function openAddDotModal() {
 	// 1. Reset Modal Fields
-	document.getElementById('dot-modal-title').innerText = "Add New Dot";
+	document.getElementById('dot-modal-title').innerText = "Lisää piste";
 	document.getElementById('edit-dot-id').value = ''; 
 	document.getElementById('dot-comment').value = '';
 	
@@ -902,16 +915,16 @@ function openAddDotModal() {
 	pendingLocation = { lat: center.lat, lng: center.lng };
 
 	// 3. Update status text
-	document.getElementById('gps-status').innerText = `Placing at map center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
+	document.getElementById('gps-status').innerText = "";//`Placing at map center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
 	
 	openModal('add-dot-modal');
 }
 
 function openAddDotModal2() {
-	document.getElementById('dot-modal-title').innerText = "Add New Dot";
+	document.getElementById('dot-modal-title').innerText = "Lisää piste";
 	document.getElementById('edit-dot-id').value = ''; 
 	document.getElementById('dot-comment').value = '';
-	document.getElementById('gps-status').innerText = "Acquiring current location...";
+	document.getElementById('gps-status').innerText = "";//"Acquiring current location...";
 	openModal('add-dot-modal');
 
 	if ("geolocation" in navigator) {
