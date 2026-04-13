@@ -310,6 +310,13 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	right: 15px; 
 	font-weight: bold;
 }
+
+#rotate-lock-btn {
+	position:absolute; 
+	z-index:1000;
+	bottom: 280px; 
+	right: 15px; 
+}
 	
 
 
@@ -392,7 +399,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<button class="fab primary" onclick="openAddDotModal()"><i class="fa-solid fa-plus"></i></button>
 	</div>
 
-	<button id="rotate-lock-btn" class="fab" onclick="toggleRotateLock()" style="position:absolute; bottom: 280px; right: 15px; z-index:1000">
+	<button id="rotate-lock-btn" class="fab" onclick="toggleRotateLock()">
 		<i class="fa-solid fa-compass"></i>
 	</button>
 
@@ -941,7 +948,7 @@ function updateOpacityUI() {
 // --- Uudet tilat muistiin ---
 let layerMode = 1; // 1: Normaali, 2: Käänteinen, 3: Vain Pohja, 4: Vain Päällys
 
-function updateSettings(key, value) {
+function updateSettings(key, value, updatemap = true) {
     localStorage.setItem(key, value);
 	
 	// Jos muutettiin opacitya, varmistetaan että teksti täsmää
@@ -949,21 +956,31 @@ function updateSettings(key, value) {
         updateOpacityUI();
     }
 	
-    const style = localStorage.getItem('preferredMapStyle') || 'osm';
-    changeMapStyle(style);
+	if(updatemap){
+		const style = localStorage.getItem('preferredMapStyle') || 'osm';
+		changeMapStyle(style);
+	}
 }
 
 function cycleLayerMode() {
     layerMode++;
     if (layerMode > 4) layerMode = 1;
+	
+	updateSettings("layerMode", layerMode, false);
     
-    // Päivitä napin ulkoasu (valinnainen: voit vaihtaa ikonia tai lisätä numeron)
-    const btn = document.getElementById('layer-mode-btn');
-    const icons = ['', '1+2', '2+1', '1', '2'];
-    btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
+    updateLayerMode();
     
     const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
     changeMapStyle(currentStyle);
+}
+
+function updateLayerMode(){
+	//layerMode = localStorage.getItem('layerMode') || 1;
+	
+	// Päivitä napin ulkoasu (valinnainen: voit vaihtaa ikonia tai lisätä numeron)
+    const btn = document.getElementById('layer-mode-btn');
+    const icons = ['', '1+2', '2+1', '1', '2'];
+    btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
 }
 
 // Alustetaan tila muistista (oletus 1 eli ei filtteriä)
@@ -1076,6 +1093,7 @@ function initMap() {
     document.getElementById('overlay-enable').checked = localStorage.getItem('overlayEnabled') === 'true';
     document.getElementById('overlay-opacity').value = localStorage.getItem('overlayOpacity') || DEFAULT_OPACITY;
 	
+
 	updateOpacityUI();
 
 	// 2. Initialize the map with the saved view
@@ -1172,13 +1190,19 @@ function initMap() {
 	document.getElementById('zoom-multiplier-btn').innerText = savedMult + 'x';
 	
 	//map.setBearing(90);
+
 	
+	layerMode = parseInt(localStorage.getItem('layerMode')) || 1;
+	updateLayerMode();
 	
 	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
 	changeMapStyle(currentStyle);
-	
-	
+
+
+
 	applyContrastFilter();
+	
+	
 	
 }
 
