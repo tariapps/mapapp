@@ -538,7 +538,7 @@ async function loadCategories() {
 	const scroller = document.getElementById('category-scroller');
 	scroller.innerHTML = `
 	<button id="cat-star" class="cat-toggle ${allCategoriesActive ? 'active' : ''}" onclick="toggleStar()">
-		<i class="fa-solid fa-layer-group"></i> 
+		<i class="fa-solid">✽</i>
 	</button>`;
 	
 	categories.forEach(cat => {
