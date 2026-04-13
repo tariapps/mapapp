@@ -304,9 +304,9 @@ path.leaflet-interactive[stroke="#2196F3"] {
 <div id="map-page" class="page active">
 	<div id="map"></div>
 	
-	<div id="compass-container" onclick="resetRotation()" style="display: none;">
+	<!--<div id="compass-container" onclick="resetRotation()" style="display: none;">
 		<i class="fa-solid fa-compass"></i>
-	</div>
+	</div>-->
 	
 	<button id="zoom-multiplier-btn" class="fab" onclick="cycleZoomMultiplier()">
 		1x
@@ -936,6 +936,7 @@ function initMap() {
 		console.warn("GPS access denied or signal lost.");
 	});
 	
+	/*
 	const compass = document.getElementById('compass-container');
 
 	map.on('rotate', () => {
@@ -950,6 +951,7 @@ function initMap() {
 			compass.style.transform = `rotate(${-angle}deg)`;
 		}
 	});
+	*/
 
 
 	updateZoomBtnUI();
