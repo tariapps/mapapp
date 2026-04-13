@@ -392,6 +392,10 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<button class="fab primary" onclick="openAddDotModal()"><i class="fa-solid fa-plus"></i></button>
 	</div>
 
+	<button id="rotate-lock-btn" class="fab" onclick="toggleRotateLock()" style="position:absolute; bottom: 280px; right: 15px;">
+		<i class="fa-solid fa-compass"></i>
+	</button>
+
 	<button id="contrast-toggle-btn" class="fab" onclick="cycleContrastMode()">
 		<i class="fa-solid fa-circle-half-stroke"></i>
 	</button>
@@ -1036,6 +1040,28 @@ function applyContrastFilter2() {
 }
 
 
+let isRotateEnabled = false;
+
+function toggleRotateLock() {
+    const btn = document.getElementById('rotate-lock-btn');
+    isRotateEnabled = !isRotateEnabled;
+
+    if (isRotateEnabled) {
+        // VAPAUTA ROTAATIO
+        map.touchRotate.enable();
+        btn.style.color = "#FFD700"; // Kultainen = Vapaa pyöritys
+        btn.style.border = "2px solid #FFD700";
+        //alert("Rotaatio vapautettu: Voit nyt pyörittää karttaa kahdella sormella.");
+    } else {
+        // LUKITSE POHJOISEEN
+        map.touchRotate.disable();
+        map.setBearing(0); // Palautetaan kartta suoraan pohjoiseen
+        btn.style.color = "#fff"; // Valkoinen = Lukittu
+        btn.style.border = "2px solid #333";
+    }
+}
+
+
 
 function initMap() {
 	// 1. Load saved View State or use defaults
@@ -1055,9 +1081,9 @@ function initMap() {
 	// 2. Initialize the map with the saved view
 	map = new L.Map('map', { 
 		rotate: true,
-		touchRotate: true,
-		rotateThreshold: 15,
+		touchRotate: false,
 		zoomControl: false,
+		rotateControl: true,
 	}).setView([savedLat, savedLng], savedZoom);
 	
 
