@@ -276,6 +276,15 @@ path.leaflet-interactive[stroke="#2196F3"] {
     background-color: #2196F3;
 }
 
+#contrast-toggle-btn {
+	position: absolute;
+	z-index: 1000;
+	bottom: 215px; 
+	right: 15px; 
+	font-weight: bold;
+}
+	
+
 
 /* Siirretään rotaationuoli oikealle */
 .leaflet-control-rotate {
@@ -332,6 +341,9 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<button class="fab primary" onclick="openAddDotModal()"><i class="fa-solid fa-plus"></i></button>
 	</div>
 
+	<button id="contrast-toggle-btn" class="fab" onclick="cycleContrastMode()">
+		<i class="fa-solid fa-circle-half-stroke"></i>
+	</button>
 	
 	<button id="layer-mode-btn" class="fab" onclick="cycleLayerMode()">
 		<i class="fa-solid fa-layer-group"></i>
@@ -864,6 +876,37 @@ function cycleLayerMode() {
     changeMapStyle(currentStyle);
 }
 
+// Alustetaan tila muistista (oletus 1 eli ei filtteriä)
+let currentContrastMode = parseInt(localStorage.getItem('mapContrastMode')) || 1;
+
+function cycleContrastMode() {
+    currentContrastMode++;
+    if (currentContrastMode > 3) currentContrastMode = 1;
+    
+    localStorage.setItem('mapContrastMode', currentContrastMode);
+    applyContrastFilter();
+}
+
+function applyContrastFilter() {
+    const mapElement = document.getElementById('map');
+    const btn = document.getElementById('contrast-toggle-btn');
+    
+    switch(currentContrastMode) {
+        case 1: // Ei filtteriä
+            mapElement.style.filter = "none";
+            btn.style.color = "#fff"; // Valkoinen ikoni
+            break;
+        case 2: // Taso 1
+            mapElement.style.filter = "contrast(144%) brightness(85%)";
+            btn.style.color = "#F6F4B0"; // Vaihdetaan napin väriä osoituksena tilasta
+            break;
+        case 3: // Taso 2
+            mapElement.style.filter = "contrast(244%) brightness(85%)";
+            btn.style.color = "#FFFF00"; // Kultainen ikoni (korkea kontrasti)
+            break;
+    }
+}
+
 
 
 function initMap() {
@@ -979,6 +1022,9 @@ function initMap() {
 	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
 	changeMapStyle(currentStyle);
 	
+	
+	applyContrastFilter();
+	
 }
 
 // Funktio kartan palauttamiseen pohjoiseen
@@ -1043,6 +1089,7 @@ function updateTiles(targetMap, style) {
 			detectRetina: false, 
 			opacity: opacity,
 			zIndex: zIndex,
+			className: 'map-layer-1',
         }).addTo(targetMap);
     };
 
@@ -1056,6 +1103,7 @@ function updateTiles(targetMap, style) {
 			detectRetina: false, 
 			opacity: opacity, 
 			zIndex: zIndex,
+			className: 'map-layer-2',
         }).addTo(targetMap);
     };
 
