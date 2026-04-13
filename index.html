@@ -276,6 +276,19 @@ path.leaflet-interactive[stroke="#2196F3"] {
     background-color: #2196F3;
 }
 
+
+/* Siirretään rotaationuoli oikealle */
+.leaflet-control-rotate {
+    position: fixed !important;
+    right: 15px !important;  /* Etäisyys oikeasta reunasta */
+    top: 75px !important;    /* Etäisyys yläreunasta (säädä niin ettei peitä valikkonappia) */
+    left: auto !important;   /* Kumotaan vasen sijainti */
+    margin: 0 !important;
+    z-index: 1000;
+}
+
+
+
 </style>
 
 </head>
