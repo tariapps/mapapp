@@ -844,7 +844,7 @@ function cycleLayerMode() {
     
     // Päivitä napin ulkoasu (valinnainen: voit vaihtaa ikonia tai lisätä numeron)
     const btn = document.getElementById('layer-mode-btn');
-    const icons = ['', '1', '2', 'P', 'O']; // P=Pohja, O=Overlay
+    const icons = ['', '1+2', '2+1', '1', '2'];
     btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
     
     const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
