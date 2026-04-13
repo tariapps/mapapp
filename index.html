@@ -422,8 +422,11 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<select id="map-style-select" onchange="updateSettings('preferredMapStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 20px;">
 			<option value="osm">Standard (High Contrast / Colorful)</option>
 			<option value="terrain">Terrain (Topography/Outdoor)</option>
-			<option value="mml_maasto">Suomen Maastokartta (MML)</option>
-			<option value="mml_ilmakuva">Suomen Ilmakuva (MML)</option>
+			<option value="mml_maasto">Suomen Maastokartta</option>
+			<option value="mml_ilmakuva">Suomen Ilmakuva (satelliitti)</option>
+			<option value="esri_satelliitti">Esri World Imagery (satelliitti)</option>
+			<option value="google_satelliitti">Google (satelliitti)</option>
+			<option value="google_satelliitti_tiet">Google (satelliitti+tiet)</option>
 			<option value="dark">Minimal Dark</option>
 			<option value="light">Minimal Light</option>
 		</select>
@@ -440,8 +443,11 @@ path.leaflet-interactive[stroke="#2196F3"] {
 			<select id="overlay-style-select" onchange="updateSettings('overlayStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
 				<option value="osm">Standard (High Contrast / Colorful)</option>
 				<option value="terrain">Terrain (Topography/Outdoor)</option>
-				<option value="mml_maasto">Suomen Maastokartta (MML)</option>
-				<option value="mml_ilmakuva">Suomen Ilmakuva (MML)</option>
+				<option value="mml_maasto">Suomen Maastokartta</option>
+				<option value="mml_ilmakuva">Suomen Ilmakuva (satelliitti)</option>
+				<option value="esri_satelliitti">Esri World Imagery (satelliitti)</option>
+				<option value="google_satelliitti">Google (satelliitti)</option>
+				<option value="google_satelliitti_tiet">Google (satelliitti+tiet)</option>
 				<option value="dark">Minimal Dark</option>
 				<option value="light">Minimal Light</option>
 			</select>
@@ -450,7 +456,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 			<input type="range" id="overlay-opacity" min="0" max="1" step="0.01" onchange="updateSettings('overlayOpacity', this.value)" style="width: 100%;">
 		</div>
 		
-		<div id="preview-map" style="height: 150px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000; margin-top: 20px;"></div>
+		<div id="preview-map" style="height: 300px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000; margin-top: 20px;"></div>
 	</div>
 </div>
 
@@ -853,6 +859,21 @@ const MAP_STYLES = {
 		attr: '&copy; Maanmittauslaitos',
 		maxNativeZoom: 18,
 	},
+	'esri_satelliitti': {
+		url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+		attr: '&copy; Esri &mdash;',
+		maxNativeZoom: 19
+	},
+	'google_satelliitti': {
+		url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+		attr: '&copy; Google Maps',
+		maxNativeZoom: 20
+	},
+	'google_satelliitti_tiet': {
+		url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+		attr: '&copy; Google Maps',
+		maxNativeZoom: 20
+	},
 	'dark': {
 		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
 		attr: '&copy; OpenStreetMap &copy; CARTO',
@@ -1133,8 +1154,8 @@ function initPreviewMap() {
 		previewMap = L.map('preview-map', { 
 			zoomControl: false,
 			attributionControl: false, // Keep it clean for the preview
-			dragging: false,
-			touchZoom: false,
+			dragging: true,
+			touchZoom: true,
 			scrollWheelZoom: false,
 			doubleClickZoom: false
 		}).setView([60.1699, 24.9384], 12); // Sample location (Helsinki)
