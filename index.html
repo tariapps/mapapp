@@ -417,6 +417,10 @@ path.leaflet-interactive[stroke="#2196F3"] {
 
 
 <div id="settings-page" class="page">
+	<button class="btn" onclick="forceUpdate()" style="margin-top: 20px; background: #333;">
+		<i class="fa-solid fa-sync"></i> Päivitä sovellus
+	</button>
+
 	<div class="list-container">
 		<h3>Pohjakartta</h3>
 		<select id="map-style-select" onchange="updateSettings('preferredMapStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 20px;">
@@ -569,6 +573,16 @@ function deleteDb(storeName, id) {
 		tx.oncomplete = () => resolve();
 	});
 }
+
+
+
+function forceUpdate() {
+    if (confirm("Ladataan uusin versio palvelimelta...")) {
+        // location.reload(true) on vanha tapa, nykyään varminta on:
+        window.location.href = window.location.href.split('?')[0] + '?update=' + new Date().getTime();
+    }
+}
+
 
 // --- UI Interactions ---
 function toggleMenu() {
