@@ -12,12 +12,13 @@
 	
 <style>
 :root {
-	--bg-dark: #121212;
-	--bg-panel: #1e1e1e;
+	--bg-dark: #000;
+	--bg-panel: #000;
 	--text-main: #e0e0e0;
 	--text-muted: #a0a0a0;
+	--bg-element: #151515;
 	--accent: #bb86fc;
-	--danger: #cf6679;
+	--danger: #FF0000;
 	--top-bar-height: 60px;
 }
 
@@ -54,7 +55,7 @@ body, html {
 #category-scroller::-webkit-scrollbar { display: none; } /* Chrome */
 
 .cat-toggle {
-	background: #333; border: 2px solid transparent; color: var(--text-main);
+	background: var(--bg-element); border: 2px solid transparent; color: var(--text-main);
 	padding: 5px 12px; border-radius: 20px; margin-right: 10px; cursor: pointer;
 	font-size: 14px; display: flex; align-items: center; gap: 5px; transition: 0.2s;
 }
@@ -133,7 +134,7 @@ body, html {
 .btn.submit { background: var(--accent); color: #000; }
 .btn.danger { background: var(--danger); color: #fff; }
 
-.cat-manage-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px;}
+.cat-manage-item { display: flex; justify-content: space-between; background: var(--bg-element); padding: 10px; margin-bottom: 5px; border-radius: 5px;}
 .cat-manage-controls button { background: none; border: none; color: var(--text-main); font-size: 16px; margin-left: 10px; cursor: pointer; }
 
 
@@ -207,6 +208,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
     color: #000;
 	border-color:#000;
 	font-weight:bold;
+	margin-bottom: 15px !important;
 }
 
 
@@ -232,6 +234,37 @@ path.leaflet-interactive[stroke="#2196F3"] {
     color: #f44336; /* Punainen "neula" */
 }
 
+#zoom-multiplier-btn {
+	position: absolute;
+	bottom: 83px;
+	right: 21px;
+	z-index: 1000;
+	background-color: #2196F3;
+	color: white;
+	/* border: 2px solid white; */
+	width: 50px;
+	height: 50px;
+	font-size: 27px;
+	font-family: arial;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+#menu-overlay {
+    display: none; /* Piilossa oletuksena */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.3); /* Himmennys (valinnainen) */
+    z-index: 999; /* Sidebarin z-indexin pitää olla suurempi kuin tämä, esim. 1000 */
+}
+
+/* Näytetään overlay vain kun sidebar on auki */
+#sidebar.open ~ #menu-overlay {
+    display: block;
+}
+
 </style>
 
 </head>
@@ -255,12 +288,18 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	<div class="menu-item" onclick="switchPage('settings-page')"><i class="fa-solid fa-cog"></i> Asetukset</div>
 </div>
 
+<div id="menu-overlay" onclick="closeMenu()"></div>
+
 <div id="map-page" class="page active">
 	<div id="map"></div>
 	
 	<div id="compass-container" onclick="resetRotation()" style="display: none;">
 		<i class="fa-solid fa-compass"></i>
 	</div>
+	
+	<button id="zoom-multiplier-btn" class="fab" onclick="cycleZoomMultiplier()">
+		1x
+	</button>
 
 	<div class="map-crosshair"></div>
 	
@@ -310,8 +349,8 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<select id="dot-category"></select>
 		<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
 		<div class="modal-actions">
-			<button class="btn" onclick="closeModal('add-dot-modal')">Cancel</button>
-			<button class="btn submit" onclick="saveDot()">Save</button>
+			<button class="btn submit" onclick="saveDot()">Tallenna</button>
+			<button class="btn" onclick="closeModal('add-dot-modal')">Peruuta</button>
 		</div>
 	</div>
 </div>
@@ -322,11 +361,11 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<input type="hidden" id="edit-cat-id">
 		<label style="font-size: 12px; color: var(--text-muted);">Nimi</label>
 		<input type="text" id="cat-name-input" placeholder="Kategorian nimi">
-		<label style="font-size: 12px; color: var(--text-muted);">Markkerin väri</label>
+		<label style="font-size: 12px; color: var(--text-muted);">Pisteen väri</label>
 		<input type="color" id="cat-color-input" value="#bb86fc" style="height: 40px; padding: 0;">
 		<div class="modal-actions">
-			<button class="btn" onclick="closeModal('cat-modal')">Peruuta</button>
 			<button class="btn submit" onclick="saveCategory()">Tallenna</button>
+			<button class="btn" onclick="closeModal('cat-modal')">Peruuta</button>
 		</div>
 	</div>
 </div>
@@ -414,13 +453,32 @@ function deleteDb(storeName, id) {
 // --- UI Interactions ---
 function toggleMenu() {
 	const sidebar = document.getElementById('sidebar');
+	const overlay = document.getElementById('menu-overlay');
+	
 	sidebar.classList.toggle('open');
+	
+	// Näytetään tai piilotetaan overlay sen mukaan onko valikko auki
+	if (sidebar.classList.contains('open')) {
+		overlay.style.display = 'block';
+	} else {
+		overlay.style.display = 'none';
+	}
+}
+
+
+function closeMenu() {
+	const sidebar = document.getElementById('sidebar');
+	const overlay = document.getElementById('menu-overlay');
+	
+	sidebar.classList.remove('open');
+	
+	if (overlay) overlay.style.display = 'none';
 }
 
 function switchPage(pageId) {
 	document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 	document.getElementById(pageId).classList.add('active');
-	toggleMenu();
+	closeMenu();
 	
 	if (pageId === 'map-page') { 
 		map.invalidateSize(); 
@@ -685,6 +743,35 @@ const MAP_STYLES = {
 		maxNativeZoom: 22,
 	}
 };
+
+// Alustetaan muuttuja LocalStoragesta tai oletuksesta
+let currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
+
+// Funktio, jota nappi kutsuu
+function cycleZoomMultiplier() {
+    currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
+    
+    currentZoomMult++;
+    if (currentZoomMult > 3) currentZoomMult = 1;
+    
+    localStorage.setItem('mapZoomMult', currentZoomMult);
+    
+    // Päivitä napin teksti
+    const btn = document.getElementById('zoom-multiplier-btn');
+    if (btn) btn.innerText = currentZoomMult + 'x';
+    
+    // Hae nykyinen tyyli muistista ja pakota päivitys molempiin karttoihin
+    const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+    changeMapStyle(currentStyle);
+}
+
+// Päivittää vain napin tekstin
+function updateZoomBtnUI() {
+    const btn = document.getElementById('zoom-multiplier-btn');
+    if (btn) btn.innerText = currentZoomMult + 'x';
+}
+
+
 function initMap() {
 	// 1. Load saved View State or use defaults
 	const savedLat = localStorage.getItem('lastMapLat') || 60.2;
@@ -778,8 +865,17 @@ function initMap() {
 	});
 
 
+	updateZoomBtnUI();
+	
+	// Aseta napin teksti oikeaksi heti alussa
+	const savedMult = localStorage.getItem('mapZoomMult') || 1;
+	document.getElementById('zoom-multiplier-btn').innerText = savedMult + 'x';
 	
 	//map.setBearing(90);
+	
+	
+	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+    changeMapStyle(currentStyle);
 }
 
 // Funktio kartan palauttamiseen pohjoiseen
@@ -809,7 +905,15 @@ function initPreviewMap() {
 }
 
 function updateTiles(targetMap, style) {
-	// Remove existing tile layers from the target map
+	// 1. Hae kerroin (1, 2 tai 3)
+	const currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
+	
+	// 2. Laske asetukset: 1x -> 0, 2x -> -1, 3x -> -2
+	const offset = -(currentZoomMult - 1);
+	// Laske koko: 1x -> 256, 2x -> 512, 3x -> 1024
+	const tSize = 256 * Math.pow(2, (currentZoomMult - 1));
+
+	// Poista vanhat kerrokset
 	targetMap.eachLayer((layer) => {
 		if (layer instanceof L.TileLayer) {
 			targetMap.removeLayer(layer);
@@ -817,18 +921,26 @@ function updateTiles(targetMap, style) {
 	});
 
 	const config = MAP_STYLES[style];
+	
+	// Lisää uusi kerros skaalattuna
 	L.tileLayer(config.url, {
 		maxZoom: 22,
 		maxNativeZoom: config.maxNativeZoom || 19,
-		attribution: config.attr
+		attribution: config.attr,
+		// TÄSSÄ UUDET ASETUKSET:
+		zoomOffset: offset,
+		tileSize: tSize,
+		detectRetina: false 
 	}).addTo(targetMap);
 }
+
 
 function changeMapStyle(style) {
 	localStorage.setItem('preferredMapStyle', style);
 	
 	// Update both the main map and the preview map
 	updateTiles(map, style);
+	
 	if (previewMap) {
 		updateTiles(previewMap, style);
 	}
@@ -951,10 +1063,10 @@ function openDotPopup(id) {
 			<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
 			<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
 			<p style="margin: 10px 0;">${dot.comment || '<i> </i>'}</p>
-			<p style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);">${coordsStr}</p>
+			<input type="text" readonly style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);" value="${coordsStr}">
 			<div style="margin-top:15px; display:flex; justify-content:space-between;">
-				<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
 				<button class="btn submit" onclick="openEditDotModal(${dot.id})" style="padding: 5px 15px; font-size:12px;">Edit</button>
+				<button class="btn danger" onclick="deleteDot(${dot.id})" style="padding: 5px 10px; font-size:12px;">Delete</button>
 			</div>
 		</div>
 	`;
@@ -1019,7 +1131,7 @@ async function openEditDotModal(id) {
 	document.getElementById('edit-dot-id').value = id;
 	document.getElementById('dot-category').value = dot.categoryId;
 	document.getElementById('dot-comment').value = dot.comment || '';
-	document.getElementById('gps-status').innerText = "Updating existing location data";
+	document.getElementById('gps-status').innerText = "";//"Updating existing location data";
 	
 	// We don't want to overwrite the GPS with current location when editing,
 	// so we set pendingLocation to the dot's current position.
