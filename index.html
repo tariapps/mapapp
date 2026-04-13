@@ -205,7 +205,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 
 /* Mittatikun tyyli */
 .leaflet-control-scale-line {
-    color: #000;
+	color: #000;
 	border-color:#000;
 	font-weight:bold;
 	margin-bottom: 15px !important;
@@ -213,25 +213,25 @@ path.leaflet-interactive[stroke="#2196F3"] {
 
 
 #compass-container {
-    position: absolute;
-    top: 10px; /* Säädä niin ettei peitä valikkoa */
-    right: 15px;
-    z-index: 1000;
-    background: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    cursor: pointer;
-    transition: transform 0.2s ease;
+	position: absolute;
+	top: 10px; /* Säädä niin ettei peitä valikkoa */
+	right: 15px;
+	z-index: 1000;
+	background: white;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+	cursor: pointer;
+	transition: transform 0.2s ease;
 }
 
 #compass-container i {
-    font-size: 24px;
-    color: #f44336; /* Punainen "neula" */
+	font-size: 24px;
+	color: #f44336; /* Punainen "neula" */
 }
 
 #zoom-multiplier-btn {
@@ -250,19 +250,30 @@ path.leaflet-interactive[stroke="#2196F3"] {
 }
 
 #menu-overlay {
-    display: none; /* Piilossa oletuksena */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.3); /* Himmennys (valinnainen) */
-    z-index: 999; /* Sidebarin z-indexin pitää olla suurempi kuin tämä, esim. 1000 */
+	display: none; /* Piilossa oletuksena */
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.3); /* Himmennys (valinnainen) */
+	z-index: 999; /* Sidebarin z-indexin pitää olla suurempi kuin tämä, esim. 1000 */
 }
 
 /* Näytetään overlay vain kun sidebar on auki */
 #sidebar.open ~ #menu-overlay {
-    display: block;
+	display: block;
+}
+
+#layer-mode-btn {
+	position: absolute;
+	z-index: 1000;
+	bottom: 150px;
+	right: 20px;
+	font-weight: bold;
+	font-size: 16px;
+	
+    background-color: #2196F3;
 }
 
 </style>
@@ -307,7 +318,13 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<button class="fab" onclick="recenterMap()"><i class="fa-solid fa-crosshairs"></i></button>
 		<button class="fab primary" onclick="openAddDotModal()"><i class="fa-solid fa-plus"></i></button>
 	</div>
+
+	
+	<button id="layer-mode-btn" class="fab" onclick="cycleLayerMode()">
+		<i class="fa-solid fa-layer-group"></i>
+	</button>
 </div>
+
 
 <div id="categories-page" class="page">
 	<div class="list-container">
@@ -322,25 +339,46 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	</div>
 </div>
 
+
 <div id="settings-page" class="page">
 	<div class="list-container">
-		<h3>Kartta</h3>
-		
-		<div style="margin-top: 15px; background: #333; padding: 15px; border-radius: 8px;">
-			<label style="display: block; margin-bottom: 10px; font-size: 14px; color: var(--text-muted);">Kartan tyyli</label>
-			<select id="map-style-select" onchange="changeMapStyle(this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
+		<h3>Pohjakartta</h3>
+		<select id="map-style-select" onchange="updateSettings('preferredMapStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 20px;">
+			<option value="osm">Standard (High Contrast / Colorful)</option>
+			<option value="terrain">Terrain (Topography/Outdoor)</option>
+			<option value="mml_maasto">Suomen Maastokartta (MML)</option>
+			<option value="mml_ilmakuva">Suomen Ilmakuva (MML)</option>
+			<option value="dark">Minimal Dark</option>
+			<option value="light">Minimal Light</option>
+		</select>
+
+		<h3>Päällystaso (Overlay)</h3>
+		<div style="background: #333; padding: 15px; border-radius: 8px; margin-top: 10px;">
+			<div style="display: flex; /*justify-content: space-between;*/ align-items: center; margin-bottom: 15px;">
+				
+				<input type="checkbox" id="overlay-enable" onchange="updateSettings('overlayEnabled', this.checked)" style="width: 20px; height: 20px;">
+				<span style="margin-left:10px">Käytä päällystasoa</span>
+			</div>
+			
+			<label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Tyyli</label>
+			<select id="overlay-style-select" onchange="updateSettings('overlayStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
 				<option value="osm">Standard (High Contrast / Colorful)</option>
 				<option value="terrain">Terrain (Topography/Outdoor)</option>
 				<option value="mml_maasto">Suomen Maastokartta (MML)</option>
+				<option value="mml_ilmakuva">Suomen Ilmakuva (MML)</option>
 				<option value="dark">Minimal Dark</option>
 				<option value="light">Minimal Light</option>
 			</select>
 
-			<div id="preview-map" style="height: 180px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000;"></div>
-			<p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Tyylin esikatselu</p>
+			<label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Läpinäkyvyys <span id="currentOpacity"></span></label>
+			<input type="range" id="overlay-opacity" min="0" max="1" step="0.01" onchange="updateSettings('overlayOpacity', this.value)" style="width: 100%;">
 		</div>
+		
+		<div id="preview-map" style="height: 150px; width: 100%; border-radius: 8px; border: 2px solid #444; background: #000; margin-top: 20px;"></div>
 	</div>
 </div>
+
+
 	
 <div id="add-dot-modal" class="modal-overlay">
 	<div class="modal">
@@ -714,6 +752,8 @@ function focusDotFromList(dotId, catId) {
 	}, 300);
 }
 
+const DEFAULT_OPACITY = 0.66;
+
 // --- Map Styles Configuration ---
 const MAP_STYLES = {
 	'osm': {
@@ -727,11 +767,16 @@ const MAP_STYLES = {
 		maxNativeZoom: 17,
 	},
 	'mml_maasto': {
-        // Kartat.hylly.org tarjoama MML-maastokartta
-        url: 'https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png?api-key=391b8651-aa49-4300-81cc-f506e6e0e077',
-        attr: '&copy; Maanmittauslaitos',
-        maxNativeZoom: 18,
-    },
+		// Kartat.hylly.org tarjoama MML-maastokartta
+		url: 'https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png?api-key=391b8651-aa49-4300-81cc-f506e6e0e077',
+		attr: '&copy; Maanmittauslaitos',
+		maxNativeZoom: 18,
+	},
+	'mml_ilmakuva': {
+		url: 'https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png?api-key=391b8651-aa49-4300-81cc-f506e6e0e077',
+		attr: '&copy; Maanmittauslaitos',
+		maxNativeZoom: 18,
+	},
 	'dark': {
 		url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
 		attr: '&copy; OpenStreetMap &copy; CARTO',
@@ -749,27 +794,63 @@ let currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
 
 // Funktio, jota nappi kutsuu
 function cycleZoomMultiplier() {
-    currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
-    
-    currentZoomMult++;
-    if (currentZoomMult > 3) currentZoomMult = 1;
-    
-    localStorage.setItem('mapZoomMult', currentZoomMult);
-    
-    // Päivitä napin teksti
-    const btn = document.getElementById('zoom-multiplier-btn');
-    if (btn) btn.innerText = currentZoomMult + 'x';
-    
-    // Hae nykyinen tyyli muistista ja pakota päivitys molempiin karttoihin
-    const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-    changeMapStyle(currentStyle);
+	currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
+	
+	currentZoomMult++;
+	if (currentZoomMult > 3) currentZoomMult = 1;
+	
+	localStorage.setItem('mapZoomMult', currentZoomMult);
+	
+	// Päivitä napin teksti
+	const btn = document.getElementById('zoom-multiplier-btn');
+	if (btn) btn.innerText = currentZoomMult + 'x';
+	
+	// Hae nykyinen tyyli muistista ja pakota päivitys molempiin karttoihin
+	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+	changeMapStyle(currentStyle);
 }
 
 // Päivittää vain napin tekstin
 function updateZoomBtnUI() {
-    const btn = document.getElementById('zoom-multiplier-btn');
-    if (btn) btn.innerText = currentZoomMult + 'x';
+	const btn = document.getElementById('zoom-multiplier-btn');
+	if (btn) btn.innerText = currentZoomMult + 'x';
 }
+
+// Päivittää vain tekstin (lennosta liikutettaessa)
+function updateOpacityUI() {
+    const slider = document.getElementById('overlay-opacity');
+    let opacityPercent = Math.round(slider.value * 100);
+    document.getElementById('currentOpacity').textContent = `${opacityPercent}%`;
+}
+
+// --- Uudet tilat muistiin ---
+let layerMode = 1; // 1: Normaali, 2: Käänteinen, 3: Vain Pohja, 4: Vain Päällys
+
+function updateSettings(key, value) {
+    localStorage.setItem(key, value);
+	
+	// Jos muutettiin opacitya, varmistetaan että teksti täsmää
+    if (key === 'overlayOpacity') {
+        updateOpacityUI();
+    }
+	
+    const style = localStorage.getItem('preferredMapStyle') || 'osm';
+    changeMapStyle(style);
+}
+
+function cycleLayerMode() {
+    layerMode++;
+    if (layerMode > 4) layerMode = 1;
+    
+    // Päivitä napin ulkoasu (valinnainen: voit vaihtaa ikonia tai lisätä numeron)
+    const btn = document.getElementById('layer-mode-btn');
+    const icons = ['', '1', '2', 'P', 'O']; // P=Pohja, O=Overlay
+    btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
+    
+    const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+    changeMapStyle(currentStyle);
+}
+
 
 
 function initMap() {
@@ -779,11 +860,17 @@ function initMap() {
 	const savedZoom = localStorage.getItem('lastMapZoom') || 13;
 	const savedStyle = localStorage.getItem('preferredMapStyle') || 'osm';
 	
-	document.getElementById('map-style-select').value = savedStyle;
+	//document.getElementById('map-style-select').value = savedStyle;
+	document.getElementById('map-style-select').value = localStorage.getItem('preferredMapStyle') || 'osm';
+    document.getElementById('overlay-style-select').value = localStorage.getItem('overlayStyle') || 'mml_maasto';
+    document.getElementById('overlay-enable').checked = localStorage.getItem('overlayEnabled') === 'true';
+    document.getElementById('overlay-opacity').value = localStorage.getItem('overlayOpacity') || DEFAULT_OPACITY;
+	
+	updateOpacityUI();
 
 	// 2. Initialize the map with the saved view
 	map = new L.Map('map', { 
-	    rotate: true,
+		rotate: true,
 		touchRotate: true,
 		zoomControl: false,
 	}).setView([savedLat, savedLng], savedZoom);
@@ -875,7 +962,8 @@ function initMap() {
 	
 	
 	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-    changeMapStyle(currentStyle);
+	changeMapStyle(currentStyle);
+	
 }
 
 // Funktio kartan palauttamiseen pohjoiseen
@@ -904,34 +992,106 @@ function initPreviewMap() {
 	updateTiles(previewMap, style);
 }
 
+
+
+
 function updateTiles(targetMap, style) {
 	// 1. Hae kerroin (1, 2 tai 3)
 	const currentZoomMult = parseInt(localStorage.getItem('mapZoomMult')) || 1;
-	
 	// 2. Laske asetukset: 1x -> 0, 2x -> -1, 3x -> -2
 	const offset = -(currentZoomMult - 1);
 	// Laske koko: 1x -> 256, 2x -> 512, 3x -> 1024
 	const tSize = 256 * Math.pow(2, (currentZoomMult - 1));
 
+	// Asetukset muistista
+    const overlayEnabled = localStorage.getItem('overlayEnabled') === 'true';
+    const overlayStyle = localStorage.getItem('overlayStyle') || 'mml_maasto';
+    const overlayOpacity = parseFloat(localStorage.getItem('overlayOpacity')) || DEFAULT_OPACITY;
+	
 	// Poista vanhat kerrokset
 	targetMap.eachLayer((layer) => {
 		if (layer instanceof L.TileLayer) {
 			targetMap.removeLayer(layer);
 		}
 	});
-
-	const config = MAP_STYLES[style];
 	
-	// Lisää uusi kerros skaalattuna
-	L.tileLayer(config.url, {
-		maxZoom: 22,
-		maxNativeZoom: config.maxNativeZoom || 19,
-		attribution: config.attr,
-		// TÄSSÄ UUDET ASETUKSET:
-		zoomOffset: offset,
-		tileSize: tSize,
-		detectRetina: false 
-	}).addTo(targetMap);
+	const bottomConfig = MAP_STYLES[style];
+    const topConfig = MAP_STYLES[overlayStyle];
+
+    const addBottom = (opacity = 1.0, zIndex = 10) => {
+        L.tileLayer(bottomConfig.url, {
+            maxZoom: 22, 
+			maxNativeZoom: bottomConfig.maxNativeZoom,
+            attribution: bottomConfig.attr, 
+			zoomOffset: offset, 
+			tileSize: tSize, 
+			detectRetina: false, 
+			opacity: opacity,
+			zIndex: zIndex,
+        }).addTo(targetMap);
+    };
+
+    const addTop = (opacity = 1.0, zIndex = 10) => {
+        L.tileLayer(topConfig.url, {
+            maxZoom: 22, 
+			maxNativeZoom: topConfig.maxNativeZoom,
+            attribution: topConfig.attr, 
+			zoomOffset: offset, 
+			tileSize: tSize, 
+			detectRetina: false, 
+			opacity: opacity, 
+			zIndex: zIndex,
+        }).addTo(targetMap);
+    };
+
+    // --- Layer Mode Logiikka ---
+    if (!overlayEnabled) {
+        addBottom(1.0);
+    } else {
+        switch(layerMode) {
+            case 1: // Normaali: Pohja alla, Overlay päällä (opacity)
+                addBottom(1.0, 9);
+                addTop(overlayOpacity, 10);
+                break;
+            case 2: // Käänteinen: Overlay alla, Pohja päällä (opacity)
+                addTop(1.0, 9);
+                addBottom(overlayOpacity, 10);
+                break;
+            case 3: // Vain pohja
+                addBottom(1.0);
+                break;
+            case 4: // Vain overlay
+                addTop(1.0);
+                break;
+        }
+    }
+	
+	/*
+	// 1. POHJAKARTTA (esim. ilmakuva tai tavallinen kartta)
+	const bottomConfig = MAP_STYLES[style];
+    L.tileLayer(bottomConfig.url, { // Voit vaihtaa tähän ilmakuvan URL:n
+        maxZoom: 22,
+        maxNativeZoom: bottomConfig.maxNativeZoom,
+		attribution: bottomConfig.attr,
+        zoomOffset: offset,
+        tileSize: tSize,
+		detectRetina: false,
+        opacity: 1.0 // Täysin näkyvä
+    }).addTo(targetMap);
+
+    // 2. PÄÄLLYSTASO (esim. maastokartta läpinäkyvänä)
+    const topConfig = MAP_STYLES.osm;
+    L.tileLayer(topConfig.url, {
+        maxZoom: 22,
+        maxNativeZoom: topConfig.maxNativeZoom,
+		attribution: topConfig.attr,
+        zoomOffset: offset,
+        tileSize: tSize,
+		detectRetina: false,
+        opacity: 0.2, // 50% läpinäkyvyys
+        zIndex: 10,    // Varmistetaan, että tämä on päällimmäisenä
+    }).addTo(targetMap);
+	*/
 }
 
 
