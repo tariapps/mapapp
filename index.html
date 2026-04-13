@@ -444,9 +444,9 @@ function initDB() {
 			if (!db.objectStoreNames.contains('categories')) {
 				const catStore = db.createObjectStore('categories', { keyPath: 'id' });
 				// Add defaults
-				catStore.add({ id: 'cat_' + Date.now(), name: 'Sieni', color: '#ff5555', order: 1 });
-				catStore.add({ id: 'cat_' + (Date.now()+1), name: 'Kasvi', color: '#55ff55', order: 2 });
-				catStore.add({ id: 'cat_' + (Date.now()+2), name: 'Eläin', color: '#5555ff', order: 3 });
+				catStore.add({ id: 'cat_' + Date.now(), name: 'Tatti', color: '#ff5555', order: 1 });
+				catStore.add({ id: 'cat_' + (Date.now()+1), name: 'Relli', color: '#ffff55', order: 2 });
+				catStore.add({ id: 'cat_' + (Date.now()+2), name: 'Limis', color: '#55eedd', order: 3 });
 			}
 			if (!db.objectStoreNames.contains('dots')) {
 				const dotStore = db.createObjectStore('dots', { keyPath: 'id', autoIncrement: true });
