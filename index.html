@@ -1054,9 +1054,9 @@ function initMap() {
 
 	// 2. Initialize the map with the saved view
 	map = new L.Map('map', { 
-		rotate: true,             // Sallii rotaatio-ominaisuuden yleisesti
-		touchRotate: false,       // ESTÄÄ pyörittämisen sormilla (ei pyöri vahingossa zoomatessa)
-		rotateControl: true,      // NÄYTTÄÄ sen neliön/napin, josta rotaation voi aktivoida
+		rotate: true,
+		touchRotate: true,
+		rotateThreshold: 15,
 		zoomControl: false,
 	}).setView([savedLat, savedLng], savedZoom);
 	
