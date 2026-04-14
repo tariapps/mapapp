@@ -34,8 +34,8 @@
 
 
 :root {
-    background-color: #000000;
-    color-scheme: dark;
+	background-color: #000000;
+	color-scheme: dark;
 	
 	--bg-dark: #000;
 	--bg-panel: #000;
@@ -300,7 +300,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 	font-weight: bold;
 	font-size: 16px;
 	
-    background-color: #2196F3;
+	background-color: #2196F3;
 }
 
 #contrast-toggle-btn {
@@ -322,15 +322,21 @@ path.leaflet-interactive[stroke="#2196F3"] {
 
 /* Siirretään rotaationuoli oikealle */
 .leaflet-control-rotate {
-    position: fixed !important;
-    right: 15px !important;  /* Etäisyys oikeasta reunasta */
-    top: 15px !important;    /* Etäisyys yläreunasta (säädä niin ettei peitä valikkonappia) */
-    left: auto !important;   /* Kumotaan vasen sijainti */
-    margin: 0 !important;
-    z-index: 1000;
+	position: fixed !important;
+	right: 15px !important;  /* Etäisyys oikeasta reunasta */
+	top: 15px !important;    /* Etäisyys yläreunasta (säädä niin ettei peitä valikkonappia) */
+	left: auto !important;   /* Kumotaan vasen sijainti */
+	margin: 0 !important;
+	z-index: 1000;
 }
 
-
+hr {
+	border: none;
+	height: 1px;          /* thickness */
+	background-color: #555; /* your color */
+	margin-top:15px;
+	margin-bottom:15px;
+}
 
 </style>
 
@@ -428,11 +434,13 @@ path.leaflet-interactive[stroke="#2196F3"] {
 
 
 <div id="settings-page" class="page">
-	<button class="btn" onclick="forceUpdate()" style="margin-top: 20px; background: #333;">
-		<i class="fa-solid fa-sync"></i> Päivitä sovellus
-	</button>
 
 	<div class="list-container">
+		<button class="btn" onclick="forceUpdate()" style="margin-top: 20px; background: #35317c;">
+			<i class="fa-solid fa-sync"></i> Päivitä sovellus
+		</button>
+		<hr>
+		
 		<h3>Pohjakartta</h3>
 		<select id="map-style-select" onchange="updateSettings('preferredMapStyle', this.value)" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 20px;">
 			<option value="osm">Standard (High Contrast / Colorful)</option>
@@ -482,7 +490,7 @@ path.leaflet-interactive[stroke="#2196F3"] {
 		<h3 id="dot-modal-title">Lisää piste</h3>
 		<input type="hidden" id="edit-dot-id"> <p id="gps-status" style="font-size: 12px; color: var(--accent); margin-bottom: 10px;"></p>
 		<select id="dot-category"></select>
-		<textarea id="dot-comment" rows="3" placeholder="Enter comment..."></textarea>
+		<textarea id="dot-comment" rows="3" placeholder="Lisää kommentti..."></textarea>
 		<div class="modal-actions">
 			<button class="btn submit" onclick="saveDot()">Tallenna</button>
 			<button class="btn" onclick="closeModal('add-dot-modal')">Peruuta</button>
@@ -588,10 +596,10 @@ function deleteDb(storeName, id) {
 
 
 function forceUpdate() {
-    if (confirm("Ladataan uusin versio palvelimelta...")) {
-        // location.reload(true) on vanha tapa, nykyään varminta on:
-        window.location.href = window.location.href.split('?')[0] + '?update=' + new Date().getTime();
-    }
+	if (confirm("Ladataan uusin versio palvelimelta...")) {
+		// location.reload(true) on vanha tapa, nykyään varminta on:
+		window.location.href = window.location.href.split('?')[0] + '?update=' + new Date().getTime();
+	}
 }
 
 
@@ -655,10 +663,12 @@ async function loadCategories() {
 		const isActive = activeCategories.has(cat.id);
 		const opacityStyle = (!allCategoriesActive && !isActive) ? 'opacity: 0.5;' : '';
 		const activeClass = isActive && !allCategoriesActive ? 'active' : '';
+		
+		const safeName = escapeHTML(cat.name);
 
 		scroller.innerHTML += `
 			<button class="cat-toggle ${activeClass}" style="${opacityStyle}" onclick="toggleCategory('${cat.id}')" id="btn-${cat.id}">
-				<span class="color-dot" style="background-color: ${cat.color};"></span> ${cat.name}
+				<span class="color-dot" style="background-color: ${cat.color};"></span> ${safeName}
 			</button>`;
 	});
 
@@ -705,7 +715,7 @@ async function loadCategoriesPage() {
 		<div class="cat-manage-item">
 			<div style="display:flex; align-items:center; gap:10px; flex-grow:1; cursor:pointer;" onclick="openEditCategoryModal('${cat.id}')">
 				<span class="color-dot" style="background-color: ${cat.color}; width:15px; height:15px; border-radius:50%; display:inline-block;"></span>
-				<span>${cat.name}</span>
+				<span>${escapeHTML(cat.name)}</span>
 				<i class="fa-solid fa-pencil" style="font-size: 12px; color: var(--text-muted); margin-left: 5px;"></i>
 			</div>
 			<div class="cat-manage-controls">
@@ -806,6 +816,17 @@ async function deleteCategory(id, name) {
 	}
 }
 
+function getFormattedDate(timestamp) {
+	let date = new Date(timestamp);
+	const d = String(date.getDate());
+	const m = String(date.getMonth() + 1);
+	const y = String(date.getFullYear());
+	const hh = String(date.getHours()).padStart(2, '0');
+	const mm = String(date.getMinutes()).padStart(2, '0');
+	const ss = String(date.getSeconds()).padStart(2, '0');
+	return `${d}.${m}.${y} - ${hh}:${mm}:${ss}`;
+}
+
 // --- List Page ---
 async function loadListPage() {
 	const dots = await getAll('dots');
@@ -824,12 +845,14 @@ async function loadListPage() {
 
 	container.innerHTML = dots.map(dot => {
 		const cat = catMap[dot.categoryId] || {name: 'Unknown', color: '#888'};
-		const dateStr = new Date(dot.timestamp).toLocaleString(); // Localized format
+		const dateStr = getFormattedDate(dot.timestamp);//new Date(dot.timestamp).toLocaleString(); // Localized format
+		const safeComment = escapeHTML(dot.comment || "");
+		const safeName = escapeHTML(cat.name);
 		return `
 			<div class="list-item" onclick="focusDotFromList(${dot.id}, '${dot.categoryId}')">
 				<div class="list-item-content">
-					<h4 style="color: ${cat.color};">${cat.name}</h4>
-					<p style="font-size: 14px; margin-bottom: 5px;">${dot.comment || ' '}</p>
+					<h4 style="color: ${cat.color};">${safeName}</h4>
+					<p style="font-size: 14px; margin-bottom: 5px;">${safeComment}</p>
 					<span class="list-item-date">${dateStr}</span>
 				</div>
 				<i class="fa-solid fa-chevron-right" style="color: var(--text-muted)"></i>
@@ -940,21 +963,21 @@ function updateZoomBtnUI() {
 
 // Päivittää vain tekstin (lennosta liikutettaessa)
 function updateOpacityUI() {
-    const slider = document.getElementById('overlay-opacity');
-    let opacityPercent = Math.round(slider.value * 100);
-    document.getElementById('currentOpacity').textContent = `${opacityPercent}%`;
+	const slider = document.getElementById('overlay-opacity');
+	let opacityPercent = Math.round(slider.value * 100);
+	document.getElementById('currentOpacity').textContent = `${opacityPercent}%`;
 }
 
 // --- Uudet tilat muistiin ---
 let layerMode = 1; // 1: Normaali, 2: Käänteinen, 3: Vain Pohja, 4: Vain Päällys
 
 function updateSettings(key, value, updatemap = true) {
-    localStorage.setItem(key, value);
+	localStorage.setItem(key, value);
 	
 	// Jos muutettiin opacitya, varmistetaan että teksti täsmää
-    if (key === 'overlayOpacity') {
-        updateOpacityUI();
-    }
+	if (key === 'overlayOpacity') {
+		updateOpacityUI();
+	}
 	
 	if(updatemap){
 		const style = localStorage.getItem('preferredMapStyle') || 'osm';
@@ -963,119 +986,119 @@ function updateSettings(key, value, updatemap = true) {
 }
 
 function cycleLayerMode() {
-    layerMode++;
-    if (layerMode > 4) layerMode = 1;
+	layerMode++;
+	if (layerMode > 4) layerMode = 1;
 	
 	updateSettings("layerMode", layerMode, false);
-    
-    updateLayerMode();
-    
-    const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
-    changeMapStyle(currentStyle);
+	
+	updateLayerMode();
+	
+	const currentStyle = localStorage.getItem('preferredMapStyle') || 'osm';
+	changeMapStyle(currentStyle);
 }
 
 function updateLayerMode(){
 	//layerMode = localStorage.getItem('layerMode') || 1;
 	
 	// Päivitä napin ulkoasu (valinnainen: voit vaihtaa ikonia tai lisätä numeron)
-    const btn = document.getElementById('layer-mode-btn');
-    const icons = ['', '1+2', '2+1', '1', '2'];
-    btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
+	const btn = document.getElementById('layer-mode-btn');
+	const icons = ['', '1+2', '2+1', '1', '2'];
+	btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span style="font-size:10px; position:absolute; bottom:5px;">${icons[layerMode]}</span>`;
 }
 
 // Alustetaan tila muistista (oletus 1 eli ei filtteriä)
 let currentContrastMode = parseInt(localStorage.getItem('mapContrastMode')) || 1;
 
 function cycleContrastMode() {
-    currentContrastMode++;
-    if (currentContrastMode > 3) currentContrastMode = 1;
-    
-    localStorage.setItem('mapContrastMode', currentContrastMode);
-    applyContrastFilter();
+	currentContrastMode++;
+	if (currentContrastMode > 3) currentContrastMode = 1;
+	
+	localStorage.setItem('mapContrastMode', currentContrastMode);
+	applyContrastFilter();
 }
 
 function applyContrastFilter() {
-    const mapElement = document.getElementById('map');
-    const btn = document.getElementById('contrast-toggle-btn');
-    
-    switch(currentContrastMode) {
-        case 1: // Ei filtteriä
-            mapElement.style.filter = "none";
-            btn.style.color = "#fff";
-            break;
-        case 2: // Taso 1 (SVG)
-            mapElement.style.filter = "url(#map-contrast-1)";
-            btn.style.color = "#F6F4B0";
-            break;
-        case 3: // Taso 2 (SVG)
-            mapElement.style.filter = "url(#map-contrast-2)";
-            btn.style.color = "#FFFF00";
-            break;
-    }
+	const mapElement = document.getElementById('map');
+	const btn = document.getElementById('contrast-toggle-btn');
+	
+	switch(currentContrastMode) {
+		case 1: // Ei filtteriä
+			mapElement.style.filter = "none";
+			btn.style.color = "#fff";
+			break;
+		case 2: // Taso 1 (SVG)
+			mapElement.style.filter = "url(#map-contrast-1)";
+			btn.style.color = "#F6F4B0";
+			break;
+		case 3: // Taso 2 (SVG)
+			mapElement.style.filter = "url(#map-contrast-2)";
+			btn.style.color = "#FFFF00";
+			break;
+	}
 }
 
 function setfilter(slope, intercept) {
-    // Haetaan kaikki feFunc-elementit vain map-contrast-1 filtterin sisältä
-    const filter = document.getElementById('map-contrast-1');
-    if (!filter) {
-        console.error("Filtteriä map-contrast-1 ei löytynyt!");
-        return;
-    }
+	// Haetaan kaikki feFunc-elementit vain map-contrast-1 filtterin sisältä
+	const filter = document.getElementById('map-contrast-1');
+	if (!filter) {
+		console.error("Filtteriä map-contrast-1 ei löytynyt!");
+		return;
+	}
 
-    const funcs = filter.querySelectorAll('feFuncR, feFuncG, feFuncB');
-    
-    funcs.forEach(el => {
-        el.setAttribute('slope', slope);
-        el.setAttribute('intercept', intercept);
-    });
+	const funcs = filter.querySelectorAll('feFuncR, feFuncG, feFuncB');
+	
+	funcs.forEach(el => {
+		el.setAttribute('slope', slope);
+		el.setAttribute('intercept', intercept);
+	});
 
-    // Varmistetaan että kartta käyttää tätä filtteriä juuri nyt, 
-    // jotta näet muutokset reaaliajassa
-    document.getElementById('map').style.filter = "url(#map-contrast-1)";
-    
-    console.log(`Filtteri päivitetty: slope=${slope}, intercept=${intercept}`);
+	// Varmistetaan että kartta käyttää tätä filtteriä juuri nyt, 
+	// jotta näet muutokset reaaliajassa
+	document.getElementById('map').style.filter = "url(#map-contrast-1)";
+	
+	console.log(`Filtteri päivitetty: slope=${slope}, intercept=${intercept}`);
 }
 
 function applyContrastFilter2() {
-    const mapElement = document.getElementById('map');
-    const btn = document.getElementById('contrast-toggle-btn');
-    
-    switch(currentContrastMode) {
-        case 1: // Ei filtteriä
-            mapElement.style.filter = "none";
-            btn.style.color = "#fff"; // Valkoinen ikoni
-            break;
-        case 2: // Taso 1
-            mapElement.style.filter = "contrast(144%) brightness(85%)";
-            btn.style.color = "#F6F4B0"; // Vaihdetaan napin väriä osoituksena tilasta
-            break;
-        case 3: // Taso 2
-            mapElement.style.filter = "contrast(244%) brightness(85%)";
-            btn.style.color = "#FFFF00"; // Kultainen ikoni (korkea kontrasti)
-            break;
-    }
+	const mapElement = document.getElementById('map');
+	const btn = document.getElementById('contrast-toggle-btn');
+	
+	switch(currentContrastMode) {
+		case 1: // Ei filtteriä
+			mapElement.style.filter = "none";
+			btn.style.color = "#fff"; // Valkoinen ikoni
+			break;
+		case 2: // Taso 1
+			mapElement.style.filter = "contrast(144%) brightness(85%)";
+			btn.style.color = "#F6F4B0"; // Vaihdetaan napin väriä osoituksena tilasta
+			break;
+		case 3: // Taso 2
+			mapElement.style.filter = "contrast(244%) brightness(85%)";
+			btn.style.color = "#FFFF00"; // Kultainen ikoni (korkea kontrasti)
+			break;
+	}
 }
 
 
 let isRotateEnabled = false;
 
 function toggleRotateLock() {
-    const btn = document.getElementById('rotate-lock-btn');
-    isRotateEnabled = !isRotateEnabled;
+	const btn = document.getElementById('rotate-lock-btn');
+	isRotateEnabled = !isRotateEnabled;
 
-    if (isRotateEnabled) {
-        // VAPAUTA ROTAATIO
-        map.touchRotate.enable();
-        btn.style.color = "#FFD700"; // Kultainen = Vapaa pyöritys
-        btn.style.border = "2px solid #FFD700";
-        //alert("Rotaatio vapautettu: Voit nyt pyörittää karttaa kahdella sormella.");
-    } else {
-        // LUKITSE POHJOISEEN
-        map.touchRotate.disable();
-        map.setBearing(0); // Palautetaan kartta suoraan pohjoiseen
-        btn.style.color = "#fff"; // Valkoinen = Lukittu
-        btn.style.border = "2px solid #333";
-    }
+	if (isRotateEnabled) {
+		// VAPAUTA ROTAATIO
+		map.touchRotate.enable();
+		btn.style.color = "#FFD700"; // Kultainen = Vapaa pyöritys
+		btn.style.border = "2px solid #FFD700";
+		//alert("Rotaatio vapautettu: Voit nyt pyörittää karttaa kahdella sormella.");
+	} else {
+		// LUKITSE POHJOISEEN
+		map.touchRotate.disable();
+		map.setBearing(0); // Palautetaan kartta suoraan pohjoiseen
+		btn.style.color = "#fff"; // Valkoinen = Lukittu
+		btn.style.border = "2px solid #333";
+	}
 }
 
 
@@ -1089,9 +1112,9 @@ function initMap() {
 	
 	//document.getElementById('map-style-select').value = savedStyle;
 	document.getElementById('map-style-select').value = localStorage.getItem('preferredMapStyle') || 'osm';
-    document.getElementById('overlay-style-select').value = localStorage.getItem('overlayStyle') || 'mml_maasto';
-    document.getElementById('overlay-enable').checked = localStorage.getItem('overlayEnabled') === 'true';
-    document.getElementById('overlay-opacity').value = localStorage.getItem('overlayOpacity') || DEFAULT_OPACITY;
+	document.getElementById('overlay-style-select').value = localStorage.getItem('overlayStyle') || 'mml_maasto';
+	document.getElementById('overlay-enable').checked = localStorage.getItem('overlayEnabled') === 'true';
+	document.getElementById('overlay-opacity').value = localStorage.getItem('overlayOpacity') || DEFAULT_OPACITY;
 	
 
 	updateOpacityUI();
@@ -1244,9 +1267,9 @@ function updateTiles(targetMap, style) {
 	const tSize = 256 * Math.pow(2, (currentZoomMult - 1));
 
 	// Asetukset muistista
-    const overlayEnabled = localStorage.getItem('overlayEnabled') === 'true';
-    const overlayStyle = localStorage.getItem('overlayStyle') || 'mml_maasto';
-    const overlayOpacity = parseFloat(localStorage.getItem('overlayOpacity')) || DEFAULT_OPACITY;
+	const overlayEnabled = localStorage.getItem('overlayEnabled') === 'true';
+	const overlayStyle = localStorage.getItem('overlayStyle') || 'mml_maasto';
+	const overlayOpacity = parseFloat(localStorage.getItem('overlayOpacity')) || DEFAULT_OPACITY;
 	
 	// Poista vanhat kerrokset
 	targetMap.eachLayer((layer) => {
@@ -1256,83 +1279,83 @@ function updateTiles(targetMap, style) {
 	});
 	
 	const bottomConfig = MAP_STYLES[style];
-    const topConfig = MAP_STYLES[overlayStyle];
+	const topConfig = MAP_STYLES[overlayStyle];
 
-    const addBottom = (opacity = 1.0, zIndex = 10) => {
-        L.tileLayer(bottomConfig.url, {
-            maxZoom: 22, 
+	const addBottom = (opacity = 1.0, zIndex = 10) => {
+		L.tileLayer(bottomConfig.url, {
+			maxZoom: 22, 
 			maxNativeZoom: bottomConfig.maxNativeZoom,
-            attribution: bottomConfig.attr, 
+			attribution: bottomConfig.attr, 
 			zoomOffset: offset, 
 			tileSize: tSize, 
 			detectRetina: false, 
 			opacity: opacity,
 			zIndex: zIndex,
 			className: 'map-layer-1',
-        }).addTo(targetMap);
-    };
+		}).addTo(targetMap);
+	};
 
-    const addTop = (opacity = 1.0, zIndex = 10) => {
-        L.tileLayer(topConfig.url, {
-            maxZoom: 22, 
+	const addTop = (opacity = 1.0, zIndex = 10) => {
+		L.tileLayer(topConfig.url, {
+			maxZoom: 22, 
 			maxNativeZoom: topConfig.maxNativeZoom,
-            attribution: topConfig.attr, 
+			attribution: topConfig.attr, 
 			zoomOffset: offset, 
 			tileSize: tSize, 
 			detectRetina: false, 
 			opacity: opacity, 
 			zIndex: zIndex,
 			className: 'map-layer-2',
-        }).addTo(targetMap);
-    };
+		}).addTo(targetMap);
+	};
 
-    // --- Layer Mode Logiikka ---
-    if (!overlayEnabled) {
-        addBottom(1.0);
-    } else {
-        switch(layerMode) {
-            case 1: // Normaali: Pohja alla, Overlay päällä (opacity)
-                addBottom(1.0, 9);
-                addTop(overlayOpacity, 10);
-                break;
-            case 2: // Käänteinen: Overlay alla, Pohja päällä (opacity)
-                addTop(1.0, 9);
-                addBottom(overlayOpacity, 10);
-                break;
-            case 3: // Vain pohja
-                addBottom(1.0);
-                break;
-            case 4: // Vain overlay
-                addTop(1.0);
-                break;
-        }
-    }
+	// --- Layer Mode Logiikka ---
+	if (!overlayEnabled) {
+		addBottom(1.0);
+	} else {
+		switch(layerMode) {
+			case 1: // Normaali: Pohja alla, Overlay päällä (opacity)
+				addBottom(1.0, 9);
+				addTop(overlayOpacity, 10);
+				break;
+			case 2: // Käänteinen: Overlay alla, Pohja päällä (opacity)
+				addTop(1.0, 9);
+				addBottom(overlayOpacity, 10);
+				break;
+			case 3: // Vain pohja
+				addBottom(1.0);
+				break;
+			case 4: // Vain overlay
+				addTop(1.0);
+				break;
+		}
+	}
 	
 	/*
 	// 1. POHJAKARTTA (esim. ilmakuva tai tavallinen kartta)
 	const bottomConfig = MAP_STYLES[style];
-    L.tileLayer(bottomConfig.url, { // Voit vaihtaa tähän ilmakuvan URL:n
-        maxZoom: 22,
-        maxNativeZoom: bottomConfig.maxNativeZoom,
+	L.tileLayer(bottomConfig.url, { // Voit vaihtaa tähän ilmakuvan URL:n
+		maxZoom: 22,
+		maxNativeZoom: bottomConfig.maxNativeZoom,
 		attribution: bottomConfig.attr,
-        zoomOffset: offset,
-        tileSize: tSize,
+		zoomOffset: offset,
+		tileSize: tSize,
 		detectRetina: false,
-        opacity: 1.0 // Täysin näkyvä
-    }).addTo(targetMap);
+		opacity: 1.0 // Täysin näkyvä
+	}).addTo(targetMap);
 
-    // 2. PÄÄLLYSTASO (esim. maastokartta läpinäkyvänä)
-    const topConfig = MAP_STYLES.osm;
-    L.tileLayer(topConfig.url, {
-        maxZoom: 22,
-        maxNativeZoom: topConfig.maxNativeZoom,
+	// 2. PÄÄLLYSTASO (esim. maastokartta läpinäkyvänä)
+	const topConfig = MAP_STYLES.osm;
+	L.tileLayer(topConfig.url, {
+		maxZoom: 22,
+		maxNativeZoom: topConfig.maxNativeZoom,
 		attribution: topConfig.attr,
-        zoomOffset: offset,
-        tileSize: tSize,
+		zoomOffset: offset,
+		tileSize: tSize,
 		detectRetina: false,
-        opacity: 0.2, // 50% läpinäkyvyys
-        zIndex: 10,    // Varmistetaan, että tämä on päällimmäisenä
-    }).addTo(targetMap);
+		opacity: 0.2, // 50% läpinäkyvyys
+		zIndex: 10,    // Varmistetaan, että tämä on päällimmäisenä
+	}).addTo(targetMap);
 	*/
 }
 
@@ -1453,18 +1476,28 @@ function selectMarker(id) {
 	if(el) el.classList.add('selected');
 }
 
+function escapeHTML(str) {
+	if (!str) return "";
+	const p = document.createElement('p');
+	p.textContent = str;
+	return p.innerHTML;
+}
+
 function openDotPopup(id) {
 	const marker = markersOnMap[id];
 	const dot = marker.dotData;
 	const cat = marker.catData;
-	const dateStr = new Date(dot.timestamp).toLocaleString();
+	const dateStr = getFormattedDate(dot.timestamp);//new Date(dot.timestamp).toLocaleString();
 	const coordsStr = `${dot.lat.toFixed(6)}, ${dot.lng.toFixed(6)}`;
+	
+	const safeComment = escapeHTML(dot.comment || "");
+	const safeName = escapeHTML(cat.name);
 
 	const popupContent = `
 		<div id="popup-${dot.id}">
-			<h3 style="color: ${cat.color}; margin-bottom:5px;">${cat.name}</h3>
+			<h3 style="color: ${cat.color}; margin-bottom:5px;">${safeName}</h3>
 			<p style="font-size:12px; color:var(--text-muted);">${dateStr}</p>
-			<p style="margin: 10px 0;">${dot.comment || '<i> </i>'}</p>
+			<p style="margin: 10px 0;">${safeComment}</p>
 			<input type="text" readonly style="font-size:11px; font-family: monospace; background:#333; padding:5px; border-radius:3px; color:var(--text-muted);" value="${coordsStr}">
 			<div style="margin-top:15px; display:flex; justify-content:space-between;">
 				<button class="btn submit" onclick="openEditDotModal(${dot.id})" style="padding: 5px 15px; font-size:12px;">Edit</button>
