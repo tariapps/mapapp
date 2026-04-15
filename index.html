@@ -1061,7 +1061,7 @@ function setfilter(slope, intercept) {
 	console.log(`Filtteri päivitetty: slope=${slope}, intercept=${intercept}`);
 }
 
-function applyContrastFilter2() {
+function applyContrastFilterCSS() {
 	const mapElement = document.getElementById('map');
 	const btn = document.getElementById('contrast-toggle-btn');
 	
@@ -1332,33 +1332,6 @@ function updateTiles(targetMap, style) {
 				break;
 		}
 	}
-	
-	/*
-	// 1. POHJAKARTTA (esim. ilmakuva tai tavallinen kartta)
-	const bottomConfig = MAP_STYLES[style];
-	L.tileLayer(bottomConfig.url, { // Voit vaihtaa tähän ilmakuvan URL:n
-		maxZoom: 22,
-		maxNativeZoom: bottomConfig.maxNativeZoom,
-		attribution: bottomConfig.attr,
-		zoomOffset: offset,
-		tileSize: tSize,
-		detectRetina: false,
-		opacity: 1.0 // Täysin näkyvä
-	}).addTo(targetMap);
-
-	// 2. PÄÄLLYSTASO (esim. maastokartta läpinäkyvänä)
-	const topConfig = MAP_STYLES.osm;
-	L.tileLayer(topConfig.url, {
-		maxZoom: 22,
-		maxNativeZoom: topConfig.maxNativeZoom,
-		attribution: topConfig.attr,
-		zoomOffset: offset,
-		tileSize: tSize,
-		detectRetina: false,
-		opacity: 0.2, // 50% läpinäkyvyys
-		zIndex: 10,    // Varmistetaan, että tämä on päällimmäisenä
-	}).addTo(targetMap);
-	*/
 }
 
 
@@ -1384,21 +1357,6 @@ function recenterMap() {
 	}
 }
 
-function recenterMap2() {
-	if ("geolocation" in navigator) {
-		navigator.geolocation.getCurrentPosition(pos => {
-			const lat = pos.coords.latitude;
-			const lng = pos.coords.longitude;
-			map.setView([lat, lng], 16);
-			
-			// Explicitly save this as the new last-viewed position
-			localStorage.setItem('lastMapLat', lat);
-			localStorage.setItem('lastMapLng', lng);
-		}, err => {
-			alert("Location access denied or unavailable.");
-		}, { enableHighAccuracy: true });
-	}
-}
 
 // --- Marker Management ---
 async function renderMapDots() {
@@ -1538,24 +1496,6 @@ function openAddDotModal() {
 	openModal('add-dot-modal');
 }
 
-function openAddDotModal2() {
-	document.getElementById('dot-modal-title').innerText = "Lisää piste";
-	document.getElementById('edit-dot-id').value = ''; 
-	document.getElementById('dot-comment').value = '';
-	document.getElementById('gps-status').innerText = "";//"Acquiring current location...";
-	openModal('add-dot-modal');
-
-	if ("geolocation" in navigator) {
-		navigator.geolocation.getCurrentPosition(pos => {
-			pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-			document.getElementById('gps-status').innerText = "Location acquired (Accuracy: " + Math.round(pos.coords.accuracy) + "m)";
-		}, err => {
-			document.getElementById('gps-status').innerText = "Using map center.";
-			const center = map.getCenter();
-			pendingLocation = { lat: center.lat, lng: center.lng };
-		}, { enableHighAccuracy: true });
-	}
-}
 
 
 
